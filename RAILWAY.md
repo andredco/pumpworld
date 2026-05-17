@@ -1,126 +1,95 @@
-# Railway (sim + optional web)
+# Railway (sim + web)
 
 The simulator listens on **one port**: Railway’s **`PORT`**. HTTP routes (`/snapshot`, `/healthz`, …) and **WebSocket** upgrades share it (same URL as API, `wss://…`).
 
-Use **two Railway services** from this repo: **`@pumpworld/sim`** (API) and **`@pumpworld/web`** (static viewer). If **`www`** shows `{"error":"unknown route"}`, the **sim** is answering — wrong Dockerfile or start command on **web**. This repo **does not ship `railway.toml`** so Railway won’t lock build settings; configure **each service in the dashboard** (below).
+Use **two Railway services** from this repo: **`@pumpworld/sim`** and **`@pumpworld/web`**.
+
+If **`www`** shows **`{"error":"unknown route"}`**, traffic is hitting **sim** (wrong Dockerfile on web). Fix **§2** first.
+
+---
 
 ## 1. GitHub
 
 Push this repo to GitHub, then in Railway: **New Project → Deploy from GitHub → pick the repo**.
 
-## 2. Two services (dashboard only — no `railway.toml`)
+---
 
-A root **`railway.toml`** forces **config-as-code**: Railway greys out Dockerfile settings and shows **“value is set in railway.toml”**. For **two different Dockerfiles** (sim vs web), **omit `railway.toml`** and set everything per service below.
+## 2. One-time wiring (do this once per service)
 
-In Railway → **each** service → **Settings → Build**:
+Railway only auto-loads config from a root **`railway.toml`** / **`railway.json`**. Two Dockerfiles need **two config files**, each **linked** to its service.
 
-| Service | Dockerfile path | Custom Build Command |
-|---------|-----------------|----------------------|
-| **`@pumpworld/sim`** | **`Dockerfile`** | *(empty)* |
-| **`@pumpworld/web`** | **`Dockerfile.web`** | *(empty)* |
+Repo files:
 
-**Deploy:** leave **Custom Start Command** empty on both (image **`CMD`**).
+| File | Service |
+|------|---------|
+| **`railway.sim.json`** | **`@pumpworld/sim`** |
+| **`railway.web.json`** | **`@pumpworld/web`** |
 
-**Healthcheck:** **`@pumpworld/sim`** → **`/healthz`** · **`@pumpworld/web`** → **`/`**
+### Steps (repeat for **sim** and **web**)
 
-Never run **`npm run build --workspace=@pumpworld/web`** as the web **Custom Build Command** — **`Dockerfile.web`** already builds inside Docker.
+1. Open the service → **Settings**.
+2. **Root Directory** → **empty** (repo root). **`Dockerfile.web` requires root context** (`package.json`, `packages/`, `apps/web/`).
+3. **Config-as-code** → set **Config file path** (wording varies) to:
+   - **`/railway.sim.json`** on **sim**
+   - **`/railway.web.json`** on **web**  
+   Use a **leading slash**, path from repo root.
+4. Remove **any inline / pasted `railway.toml`** in Railway (old UI copies can override Git and keep showing “set in railway.toml”).
+5. **Deploy** tab: **Custom Start Command** → **empty** everywhere (image **`CMD`** runs the process).
 
-### Sim service — image details
+After linking, Railway applies from JSON:
 
-The sim Docker build prints **`=== pumpworld Dockerfile ===`** and uses **`npm install`** with cache under **`/tmp`** to avoid **`EBUSY`** on **`node_modules/.cache`**.
+- Correct **`dockerfilePath`** (`Dockerfile` vs **`Dockerfile.web`**)
+- **`buildCommand`: null** → clears mistaken **`npm run build --workspace=…`** entries
+- **`watchPatterns`** → shared edits (e.g. **`packages/**`**) redeploy **both**; **`Dockerfile`** vs **`Dockerfile.web`** changes redeploy **only** the matching service
 
-### If builds still show only `RUN npm ci` (Railpack)
+### Fallback (optional)
 
-Railway is **not** using your Dockerfile.
+On **`@pumpworld/web`** only, you can also set variable **`RAILWAY_DOCKERFILE_PATH`** = **`Dockerfile.web`** ([docs](https://docs.railway.com/variables/reference)). Still link **`railway.web.json`** so **`buildCommand`** and **watchPatterns** stay correct.
 
-1. Service → **Settings → Build**.
-2. **Root Directory** → leave **empty** (repo root).
-3. **Builder** → **Dockerfile** (not Railpack).
-4. **Dockerfile path** → **`Dockerfile`** (sim) or **`Dockerfile.web`** (web). If this field was greyed out, remove **`railway.toml`** from the repo (or delete **`[build]`** from it) and redeploy.
-5. **Custom Build Command** → empty.
+---
 
-Redeploy sim and confirm logs contain **`=== pumpworld Dockerfile ===`** (web should show **`=== pumpworld Dockerfile.web ===`**).
+## 3. Sim image
 
-### Persistent world data (required)
+Build logs must include **`=== pumpworld Dockerfile ===`**. Image uses **`npm install`** and **`/tmp`** npm cache to reduce **`EBUSY`** on **`node_modules/.cache`**.
 
-Without a disk, redeploys wipe `data/`.
+### Persistent world data
 
-1. In the service → **Settings → Volumes** → add a volume.
-2. Mount path: **`/data`**
-3. Variables → add **`PUMPWORLD_DATA_DIR=/data`**
+1. **Volumes** → mount **`/data`**
+2. **`PUMPWORLD_DATA_DIR=/data`**
 
-### Environment variables
-
-The **default six-pill roster** (`apps/sim/src/world/seed.ts`) uses **OpenAI Chat Completions for five pills** and **Gemini for one** (Mango). Set at least:
-
-| Variable | Purpose |
-|----------|---------|
-| `OPENAI_API_KEY` | Five pills (`openai` provider in roster) |
-| `GEMINI_API_KEY` | Mango (`gemini` provider); alternately `gemini_api_key`, `GOOGLE_AI_API_KEY`, or `GOOGLE_GENERATIVE_AI_API_KEY` |
-| `PUMPWORLD_DATA_DIR` | e.g. `/data` when using a volume |
-
-Optional:
+### Env (default roster)
 
 | Variable | Purpose |
 |----------|---------|
-| `PUMPWORLD_TOKEN_MINT` | DexScreener live stats (Solana mint). On Railway, if unset, the sim uses a **neutral token feed** so the service can still boot. |
-| `OPENROUTER_API_KEY` | Only if you change souls to `provider: openrouter` |
+| `OPENAI_API_KEY` | Five pills (`openai` in roster) |
+| `GEMINI_API_KEY` | Mango (`gemini`); or `GOOGLE_AI_API_KEY`, etc. |
+| `PUMPWORLD_DATA_DIR` | e.g. `/data` with a volume |
 
-Other optional: `PUMPWORLD_SEED`, `PUMPWORLD_FRESH_START`, keys for Anthropic / xAI / MiniMax / OSS if you edit the roster.
+Optional: `PUMPWORLD_TOKEN_MINT`; on Railway without mint, sim uses a **neutral token feed**. Other keys if you change roster — see `apps/sim/src/world/seed.ts`.
 
-### Healthcheck failure (`Network > Healthcheck`)
+---
 
-Railway expects **`GET /healthz`** on **`PORT`** → **200**. Messages like **“service unavailable”** usually mean the **container exited** or never listened.
+## 4. Web viewer
 
-1. **Deploy logs** — Open the **Deploy** log stream (not only the healthcheck panel). Look for `Error:` such as **`OPENAI_API_KEY is required`** or **`GEMINI_API_KEY … is required`**. Setting only **`OPENROUTER_API_KEY`** is **not** enough for the default roster.
-2. **Wrong interface** — With **`PORT`** set (Railway), the sim binds **`0.0.0.0`** so the platform can reach the container.
-3. **Neutral token feed on Railway** — If **`PUMPWORLD_TOKEN_MINT`** is unset **and** Railway env is detected, the sim still boots without DexScreener; add the mint when you want live market stats.
+Link **`railway.web.json`** (§2).
 
-Railway injects **`PORT`** automatically; do not set `PUMPWORLD_HTTP_PORT` / `PUMPWORLD_WS_PORT` unless you know you need the legacy two-port mode.
-
-## 3. Public URL
-
-After deploy, Railway shows something like `https://pillworld-production-xxxx.up.railway.app`.
-
-Smoke test:
-
-```bash
-curl -sS https://YOUR_SERVICE.up.railway.app/healthz
-```
-
-WebSocket: connect to **`wss://YOUR_SERVICE.up.railway.app`** (no path).
-
-## 4. Viewer service (`@pumpworld/web` on Railway)
-
-### Dockerfile (recommended)
-
-1. New service from the same repo → **Settings → Build**.
-2. **Dockerfile path**: **`Dockerfile.web`** (not `Dockerfile`).
-3. **Clear** any **Custom Start Command** so the image **`CMD`** (`serve …`) runs.
-4. **Healthcheck**: use **`/`** (not **`/healthz`** — that’s only for **sim**).
-
-### Build-time variables (required for a working viewer)
-
-Vite bakes API URLs at **`npm run build`**. In Railway → **web** service → **Variables**, add as **build-time** / Docker **ARG** (Railway: link variables to **Build**):
+**Build-time** vars (Vite bakes URLs at build):
 
 | Variable | Example |
 |----------|---------|
-| `PUMPWORLD_HTTP_URL` | `https://YOUR_SIM_HOST.up.railway.app` |
-| `PUMPWORLD_WS_URL` | `wss://YOUR_SIM_HOST.up.railway.app` |
+| `PUMPWORLD_HTTP_URL` | `https://YOUR_SIM.up.railway.app` |
+| `PUMPWORLD_WS_URL` | `wss://YOUR_SIM.up.railway.app` |
 
-Use your **sim** public HTTPS URL for both (same host as WebSocket).
+Point both at the **sim** public host. Redeploy **web** after changing them.
 
-Redeploy **web** after changing these.
+---
 
-### Local build (alternative hosts)
+## 5. Smoke tests
 
 ```bash
-export PUMPWORLD_HTTP_URL="https://YOUR_SIM_HOST.up.railway.app"
-export PUMPWORLD_WS_URL="wss://YOUR_SIM_HOST.up.railway.app"
-npm ci
-npm run build -w @pumpworld/web
+curl -sS https://YOUR_SIM.up.railway.app/healthz
 ```
 
-Deploy **`apps/web/dist`** anywhere, or use **`Dockerfile.web`** on Railway.
+Custom domain for **web** should return **HTML** at **`/`**, not **`{"error":"unknown route"}`**.
 
-Local dev is unchanged: **8787** + **8788** when `PORT` is unset.
+Local dev unchanged: **8787** + **8788** when **`PORT`** is unset.

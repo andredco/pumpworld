@@ -1,0 +1,23 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile",
+    "buildCommand": null,
+    "watchPatterns": [
+      "/Dockerfile",
+      "/package.json",
+      "/package-lock.json",
+      "/tsconfig.base.json",
+      "/packages/**",
+      "/apps/sim/**",
+      "/scripts/**"
+    ]
+  },
+  "deploy": {
+    "startCommand": null,
+    "healthcheckPath": "/healthz",
+    "healthcheckTimeout": 120,
+    "restartPolicyType": "ON_FAILURE"
+  }
+}
