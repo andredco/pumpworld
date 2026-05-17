@@ -9,11 +9,12 @@ import { runTick } from "./world/tick.js";
 import { seedWorld, syncPersonalitiesWithWorld } from "./world/seed.js";
 import type { TokenFeed } from "./token/TokenFeed.js";
 import { DexScreenerFeed } from "./token/DexScreenerFeed.js";
+import { OffTokenFeed } from "./token/OffTokenFeed.js";
 import { newMarketState } from "./token/influence.js";
 import { resumeOrSeed } from "./persistence/resume.js";
 import { ensureBrainsConfigured } from "./agents/providers/index.js";
 
-function createProductionTokenFeed(): DexScreenerFeed {
+function createTokenFeed(): TokenFeed {
   const legacyMock = (process.env.PUMPWORLD_TOKEN_FEED ?? "").toLowerCase() === "mock";
   if (legacyMock) {
     throw new Error(
@@ -22,6 +23,13 @@ function createProductionTokenFeed(): DexScreenerFeed {
   }
   const mint = config.token.mintAddress.trim();
   if (!mint) {
+    const deployRailway = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID);
+    if (deployRailway || process.env.PUMPWORLD_TOKEN_OFF === "1") {
+      console.warn(
+        "[sim] PUMPWORLD_TOKEN_MINT unset — using neutral token feed (no DexScreener). Set PUMPWORLD_TOKEN_MINT for live market stats.",
+      );
+      return new OffTokenFeed();
+    }
     throw new Error(
       "PUMPWORLD_TOKEN_MINT is required. The sim polls DexScreener for live $PILLS price and volume.",
     );
@@ -52,10 +60,15 @@ async function main() {
   const agents = new Map<string, Agent>();
   for (const pill of world.pills.values()) agents.set(pill.id, new Agent(pill.id));
 
+  // Fail before binding PORT so deploy logs show a brain-config error instead of only Railway "503 /healthz".
   ensureBrainsConfigured(world);
 
-  const tokenFeed: TokenFeed = createProductionTokenFeed();
-  console.log(`  token feed: DexScreener (${config.token.mintAddress.trim()})`);
+  const tokenFeed: TokenFeed = createTokenFeed();
+  console.log(
+    tokenFeed.id === "dexscreener"
+      ? `  token feed: DexScreener (${config.token.mintAddress.trim()})`
+      : `  token feed: ${tokenFeed.id} (neutral / no live mint)`,
+  );
   tokenFeed.start();
   const marketState = newMarketState();
 
@@ -66,7 +79,13 @@ async function main() {
     : new WsBroadcaster({ port: config.wsPort, onError: err => console.error("[ws]", err) });
   ws.setSnapshotProvider(() => world.snapshot());
   ws.setSnapshot(world.snapshot());
-  httpServer.listen(config.httpPort);
+  if (process.env.HOST != null) {
+    httpServer.listen(config.httpPort, process.env.HOST);
+  } else if (process.env.PORT != null) {
+    httpServer.listen(config.httpPort, "0.0.0.0");
+  } else {
+    httpServer.listen(config.httpPort);
+  }
 
   // Write the genesis snapshot up-front so replays of even very short runs
   // have a starting point to load.

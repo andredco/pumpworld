@@ -111,7 +111,7 @@ cd pumpworld   # project root
 npm install
 
 cp .env.example .env
-# Required: OPENROUTER_API_KEY and PUMPWORLD_TOKEN_MINT (Solana mint for DexScreener)
+# Required: OPENAI_API_KEY, GEMINI_API_KEY (see roster in apps/sim/src/world/seed.ts), and PUMPWORLD_TOKEN_MINT (Solana mint for DexScreener)
 
 npm run dev
 # → http://localhost:5173/  (the public viewer)
@@ -119,7 +119,7 @@ npm run dev
 # → ws://localhost:8788/    (sim WebSocket)
 ```
 
-The sim exits at startup if either key piece is missing: pills need OpenRouter, and the town needs a mint so DexScreener can supply live stats.
+The sim exits at startup if brain API keys or the token mint are missing (defaults: OpenAI + Gemini roster; DexScreener needs a mint).
 
 You can change poll cadence with `PUMPWORLD_TOKEN_POLL_MS` (default 10000 ms).
 
