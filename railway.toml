@@ -3,8 +3,8 @@
 # in the service variables so the town survives redeploys.
 
 [build]
-builder = "nixpacks"
-buildCommand = "npm ci"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "npm run start -w @pumpworld/sim"

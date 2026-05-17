@@ -8,7 +8,7 @@ Push this repo to GitHub, then in Railway: **New Project → Deploy from GitHub 
 
 ## 2. Sim service
 
-Use the root **`railway.toml`** (build `npm ci`, start `npm run start -w @pumpworld/sim`).
+Use the root **`railway.toml`**: build uses the **`Dockerfile`** (npm cache under `/tmp` to avoid Docker **`EBUSY`** on `node_modules/.cache`). Start: `npm run start -w @pumpworld/sim`.
 
 ### Persistent world data (required)
 
