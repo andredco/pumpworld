@@ -1,0 +1,36 @@
+node_modules/
+dist/
+build/
+.vite/
+.cache/
+coverage/
+*.tsbuildinfo
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Runtime data (event logs, snapshots, replays)
+data/
+runs/
+*.replay
+*.snapshot.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Internal ops (hosting configs — keep locally; do not publish)
+deploy/

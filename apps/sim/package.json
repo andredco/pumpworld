@@ -1,0 +1,30 @@
+{
+  "name": "@pumpworld/sim",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "dev:fresh": "node scripts/dev-fresh.mjs",
+    "start": "node --import tsx src/index.ts",
+    "test:models": "tsx scripts/test-openrouter-roster.ts",
+    "test:brains": "tsx scripts/smoke-brains.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@pumpworld/protocol": "*",
+    "dotenv": "^16.4.5",
+    "nanoid": "^5.0.7",
+    "seedrandom": "^3.0.5",
+    "tsx": "^4.19.1",
+    "ws": "^8.18.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "@types/seedrandom": "^3.0.8",
+    "@types/ws": "^8.5.12",
+    "typescript": "^5.6.3"
+  }
+}

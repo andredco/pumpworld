@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pill World — live</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    />
+    <style>
+      :root {
+        --pw-bg: #07090c;
+        --pw-bg-2: #0c1018;
+        --pw-text: #e7eaf0;
+        --pw-text-dim: #9aa5b4;
+        --pw-text-faint: #5a6373;
+        --pw-border: rgba(255, 255, 255, 0.07);
+        --pw-border-strong: rgba(255, 255, 255, 0.14);
+        --pw-card: rgba(10, 13, 18, 0.78);
+        --pw-card-hover: rgba(15, 19, 26, 0.88);
+        --pw-pink: #ff5c8a;
+        --pw-sky: #5ac8fa;
+        --pw-gold: #ffd23f;
+        --pw-mint: #34e0a1;
+        --pw-rose: #ff4d6d;
+        --pw-warn: #f0c674;
+        --pw-bad: #f47272;
+        --pw-good: #7cd4a2;
+        --pw-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        --pw-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      html, body, #root {
+        margin: 0; padding: 0;
+        height: 100%; width: 100%;
+        background: var(--pw-bg);
+        color: var(--pw-text);
+        font-family: var(--pw-font);
+        font-feature-settings: "ss01" on, "cv11" on;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow: hidden;
+      }
+      body { font-size: 14px; line-height: 1.45; letter-spacing: -0.005em; }
+      button, input { font-family: inherit; }
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.08);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+      ::-webkit-scrollbar-track { background: transparent; }
+      .pw-mono { font-family: var(--pw-mono); font-variant-numeric: tabular-nums; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

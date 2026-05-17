@@ -1,0 +1,27 @@
+{
+  "name": "pumpworld",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Pumpworld — a persistent 3D society of AI-driven pills, streamed live to viewers.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run -ws --if-present build",
+    "dev:sim": "npm run dev -w @pumpworld/sim",
+    "dev:sim:fresh": "npm run dev:fresh -w @pumpworld/sim",
+    "dev:web": "npm run dev -w @pumpworld/web",
+    "dev": "npm-run-all -p dev:sim dev:web",
+    "dev:fresh": "npm-run-all -p dev:sim:fresh dev:web",
+    "typecheck": "npm run -ws --if-present typecheck"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20.10.0",
+    "npm": ">=10.0.0"
+  }
+}
