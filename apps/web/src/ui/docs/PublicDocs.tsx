@@ -1,6 +1,10 @@
-import pillWorldSource from "../../../../../docs/PILL_WORLD.md?raw";
-import architectureSource from "../../../../../docs/ARCHITECTURE.md?raw";
-import agentsSource from "../../../../../AGENTS.md?raw";
+// Canonical sources live at the monorepo root (docs/*.md, AGENTS.md). They're
+// mirrored into ./content/ by `apps/web/scripts/sync-docs.mjs` (run from
+// `prebuild`) so the web build is self-contained — works under Railpack,
+// Dockerfile.web, and local dev without escaping the package.
+import pillWorldSource from "./content/PILL_WORLD.md?raw";
+import architectureSource from "./content/ARCHITECTURE.md?raw";
+import agentsSource from "./content/AGENTS.md?raw";
 import { MarkdownReader } from "./MarkdownReader.js";
 import {
   DOC_PBORDER,
