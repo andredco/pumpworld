@@ -62,6 +62,12 @@ export const config = {
   openaiMaxCallsPerMinute: num(process.env.PUMPWORLD_OPENAI_MAX_CALLS_PER_MINUTE, 5),
   /** Max completion tokens per brain call. Raise for long blog_post JSON; lower to save cost. */
   brainMaxOutputTokens: num(process.env.PUMPWORLD_BRAIN_MAX_TOKENS, 8192),
+  /**
+   * Hard timeout per LLM HTTP call, in milliseconds. Without this a single
+   * hung upstream wedges a pill forever (Agent.inflight stays true). 45s gives
+   * slow models room to finish a long blog_post; tune via env if needed.
+   */
+  brainCallTimeoutMs: num(process.env.PUMPWORLD_BRAIN_CALL_TIMEOUT_MS, 45_000),
   /** LLM sampling temperature for brains (0–2). Higher = messier, more human-varied choices; lower = safer repeats. */
   brainTemperature: num(process.env.PUMPWORLD_BRAIN_TEMPERATURE, 1.08),
 

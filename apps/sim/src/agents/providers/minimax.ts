@@ -1,6 +1,7 @@
 import { ActionSchema, type Action } from "@pumpworld/protocol";
 import { brainSamplingTemperature } from "../../config.js";
 import { stripCodeFences } from "../../util/brainJson.js";
+import { fetchWithTimeout } from "./httpFetch.js";
 import type { BrainProvider, BrainRequest, BrainResponse } from "./types.js";
 
 interface OpenAIChatMsg { role: "system" | "user" | "assistant"; content: string }
@@ -14,7 +15,14 @@ const DEFAULT_BASE = "https://api.minimax.io/v1";
 
 /** Strip internal reasoning blocks MiniMax returns ahead of user-visible text. */
 function stripMiniMaxThinking(raw: string): string {
-  return raw.replace(/<think>[\s\S]*?<\/redacted_thinking>/gi, "").trim();
+  // MiniMax reasoning models can wrap thinking in either `<think>...</think>`
+  // or `<redacted_thinking>...</redacted_thinking>`. The previous regex used
+  // a `<think>` open tag with a `</redacted_thinking>` close tag, which never
+  // matched, so chain-of-thought text leaked into the JSON parser.
+  return raw
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/<redacted_thinking>[\s\S]*?<\/redacted_thinking>/gi, "")
+    .trim();
 }
 
 /**
@@ -53,14 +61,14 @@ export class MiniMaxProvider implements BrainProvider {
       max_completion_tokens: maxOut,
     };
 
-    const r = await fetch(url, {
+    const r = await fetchWithTimeout(url, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify(body),
-    });
+    }, { providerLabel: "minimax" });
     if (!r.ok) throw new Error(`minimax HTTP ${r.status}: ${await r.text()}`);
 
     const json = await r.json() as OpenAIChatResp;

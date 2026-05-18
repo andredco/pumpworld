@@ -310,6 +310,11 @@ export interface WorldMeta {
   pumpLastClockSlot?: number;
   /** Last in-world day when the noon tide fired (persists across restart). */
   pumpLastTideDay?: number;
+  /**
+   * Monotonic event-id counter. Persisted on the meta so a snapshot resume
+   * does not restart at 1 and collide with ids already written to events.jsonl.
+   */
+  nextEventId?: number;
   /** Latest $PILLS market snapshot. */
   tokenStats: TokenStats;
   /** Derived per-tick: how the market is shaping the town right now. */

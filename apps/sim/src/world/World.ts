@@ -26,16 +26,18 @@ export class World {
 
   /** Append-only in-memory event buffer (flushed by the event log writer). */
   pendingEvents: WorldEvent[] = [];
-  private nextEventId = 1;
 
   constructor(meta: WorldMeta) {
-    this.meta = meta;
+    // Mirror nextEventId onto meta so it's snapshotted and survives resume.
+    this.meta = { ...meta, nextEventId: meta.nextEventId ?? 1 };
   }
 
   emit(ev: EventInput): WorldEvent {
+    const id = this.meta.nextEventId ?? 1;
+    this.meta.nextEventId = id + 1;
     const full = {
       ...ev,
-      id: this.nextEventId++,
+      id,
       tick: ev.tick ?? this.meta.tick,
       ms: Date.now(),
     } as WorldEvent;

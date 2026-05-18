@@ -52,6 +52,9 @@ export function tickPump(world: World): void {
   // Noon tide — once per in-world day, persisted on meta.
   if (Math.abs(hour - TIDE_HOUR) < 0.1 && world.meta.pumpLastTideDay !== world.meta.dayOfWorld) {
     world.meta.pumpLastTideDay = world.meta.dayOfWorld;
+    // Mark the noon hour slot as consumed too — the tide IS the noon delivery,
+    // so we don't also fire the hourly drip on the very next sub-tick.
+    world.meta.pumpLastClockSlot = clockSlot;
     const rng = makeRng(`tide:${world.meta.seed}:${world.meta.dayOfWorld}`);
     const ids: string[] = [];
     let total = 0;

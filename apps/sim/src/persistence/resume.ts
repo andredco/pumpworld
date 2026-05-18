@@ -14,7 +14,7 @@
  * via syncPersonalitiesWithWorld() at startup. Long-term world state (pills,
  * buildings, blogs, market, incidents, trials, Spring cadence watermarks) resumes.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync, openSync, closeSync, ftruncateSync } from "node:fs";
 import { join } from "node:path";
 import type { WorldSnapshot } from "@pumpworld/protocol";
 import { World } from "../world/World.js";
@@ -92,9 +92,67 @@ export function resumeOrSeed(
   try {
     const json = JSON.parse(readFileSync(snap.file, "utf8")) as WorldSnapshot;
     const world = hydrateWorldFromSnapshot(json);
+    // Repair a possibly-truncated trailing line in events.jsonl from a hard
+    // crash (SIGKILL mid-write), and seed the world's event-id counter past
+    // anything already on disk so newly-emitted events keep ids monotonic.
+    repairAndAlignEventLog(runDir, world);
     return { world, runDir, resumedFromTick: snap.tick, source: "snapshot" };
   } catch (err) {
     console.warn(`[resume] failed to hydrate ${snap.file}: ${(err as Error).message}`);
     return { world: seedFn(), runDir: null, resumedFromTick: 0, source: "genesis" };
   }
+}
+
+/**
+ * Truncate any partial trailing line in events.jsonl, then advance the world's
+ * `nextEventId` past the highest id already present so post-resume events
+ * cannot collide with previously-written ones.
+ */
+function repairAndAlignEventLog(runDir: string, world: World): void {
+  const file = join(runDir, "events.jsonl");
+  let body: string;
+  try { body = readFileSync(file, "utf8"); }
+  catch { return; }
+  if (body.length === 0) return;
+
+  // If the file does not end in '\n', the last line is a partial write — drop it.
+  let truncatedAt: number | null = null;
+  if (!body.endsWith("\n")) {
+    const lastNl = body.lastIndexOf("\n");
+    truncatedAt = lastNl >= 0 ? lastNl + 1 : 0;
+    body = body.slice(0, truncatedAt);
+  }
+
+  // Find the maximum event id that was successfully written.
+  let maxId = 0;
+  // Scan from the tail backward for performance — ids are monotonic so the
+  // last well-formed line should hold the max.
+  const lines = body.split("\n");
+  for (let i = lines.length - 1; i >= 0 && i >= lines.length - 200; i--) {
+    const line = lines[i];
+    if (!line) continue;
+    const m = line.match(/"id":(\d+)/);
+    if (m) { maxId = Math.max(maxId, Number(m[1])); break; }
+  }
+  // Walk anything weird at the head if the tail fingerprint was missing.
+  if (maxId === 0) {
+    for (const line of lines) {
+      const m = line.match(/"id":(\d+)/);
+      if (m) maxId = Math.max(maxId, Number(m[1]));
+    }
+  }
+
+  if (truncatedAt != null) {
+    try {
+      const fd = openSync(file, "r+");
+      ftruncateSync(fd, truncatedAt);
+      closeSync(fd);
+      console.warn(`[resume] truncated partial trailing line in ${file} at byte ${truncatedAt}`);
+    } catch (err) {
+      console.warn(`[resume] could not truncate partial line: ${(err as Error).message}`);
+    }
+  }
+
+  const fromMeta = world.meta.nextEventId ?? 1;
+  world.meta.nextEventId = Math.max(fromMeta, maxId + 1);
 }

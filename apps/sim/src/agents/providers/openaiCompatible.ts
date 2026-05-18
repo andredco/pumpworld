@@ -2,6 +2,7 @@ import { ActionSchema, type Action } from "@pumpworld/protocol";
 import { brainSamplingTemperature } from "../../config.js";
 import { stripCodeFences } from "../../util/brainJson.js";
 import { acquireOpenAiSlot } from "./openaiRateLimit.js";
+import { fetchWithTimeout } from "./httpFetch.js";
 import type { BrainProvider, BrainRequest, BrainResponse } from "./types.js";
 
 interface OpenAIChatMsg { role: "system" | "user" | "assistant"; content: string }
@@ -42,14 +43,14 @@ export class OpenAICompatibleProvider implements BrainProvider {
       response_format: { type: "json_object" } as const,
       ...(req.seed != null ? { seed: req.seed } : {}),
     };
-    const r = await fetch(`${this.baseUrl}/chat/completions`, {
+    const r = await fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         ...(this.apiKey ? { "authorization": `Bearer ${this.apiKey}` } : {}),
       },
       body: JSON.stringify(body),
-    });
+    }, { providerLabel: this.id });
     if (!r.ok) throw new Error(`${this.id} HTTP ${r.status}: ${await r.text()}`);
     const json = await r.json() as OpenAIChatResp;
     const raw = json.choices?.[0]?.message?.content ?? "";

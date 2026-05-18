@@ -270,6 +270,14 @@ export function resolveAction(world: World, pill: Pill, action: Action): boolean
     case "accuse": {
       const inc = world.incidents.get(action.incidentId);
       if (!inc) return false;
+      // Only people with standing in the incident can name a suspect (matches
+      // AGENTS.md: witnesses & victims direct the case, not bystanders inventing
+      // suspects from the other side of town).
+      const hasStanding =
+        inc.witnessPillIds.includes(pill.id)
+        || inc.victimPillIds.includes(pill.id)
+        || inc.suspectPillId === pill.id; // a suspect can also redirect (confess to someone else)
+      if (!hasStanding) return false;
       if (!inc.suspectPillId) inc.suspectPillId = action.suspectPillId;
       // Witness comes forward; could feed jury logic later.
       return true;
@@ -281,6 +289,18 @@ export function resolveAction(world: World, pill: Pill, action: Action): boolean
       const suspect = world.pills.get(action.suspectPillId);
       const inc = world.incidents.get(action.incidentId);
       if (!suspect || !inc) return false;
+      // The arrest action must match the incident's named suspect; a guard
+      // cannot drag a random pill to jail "for" some unrelated case.
+      if (inc.suspectPillId == null || inc.suspectPillId !== suspect.id) return false;
+      // Cannot arrest a pill who is not arrest-able. Guards against zombifying
+      // a corpse via incarceration, double-jailing a defendant already on trial,
+      // etc.
+      if (
+        suspect.status === "dead"
+        || suspect.status === "exiled"
+        || suspect.status === "incarcerated"
+        || suspect.status === "awaiting_execution"
+      ) return false;
       if (v3dist2D(suspect.position, pill.position) > REACH_M + 1) return false;
       suspect.status = "incarcerated";
       suspect.sentenceTicksRemaining = 20; // holding pending trial

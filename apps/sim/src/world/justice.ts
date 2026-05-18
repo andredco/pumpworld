@@ -108,7 +108,14 @@ export function concludeTrial(
   const def = world.pills.get(trial.defendantPillId);
   const inc = world.incidents.get(trial.incidentId);
   if (inc) inc.resolved = true;
-  if (def && verdict === "guilty") {
+  // A defendant who died (or was exiled) before the verdict skips sentencing.
+  // The trial still concludes for the record, but we never resurrect a corpse
+  // into "awaiting_execution" or "incarcerated".
+  const sentenceable = def
+    && def.status !== "dead"
+    && def.status !== "exiled"
+    && def.status !== "awaiting_execution";
+  if (def && verdict === "guilty" && sentenceable) {
     switch (sentence) {
       case "fine":
         def.role.wealth = Math.max(0, def.role.wealth - (sentenceParam ?? 10));
@@ -139,7 +146,14 @@ export function concludeTrial(
 export function tickIncarceration(world: World): void {
   for (const p of world.pills.values()) {
     if (p.status !== "incarcerated") continue;
-    if (p.sentenceTicksRemaining == null) { p.status = "alive"; continue; }
+    if (p.sentenceTicksRemaining == null) {
+      // Bug guard: a pill ended up incarcerated without a sentence timer.
+      // Release them so they don't sit in jail forever, but emit the event
+      // so the viewer/replay observe the transition.
+      p.status = "alive";
+      world.emit({ kind: "pill_released", pillId: p.id });
+      continue;
+    }
     p.sentenceTicksRemaining--;
     if (p.sentenceTicksRemaining <= 0) {
       p.status = "alive";

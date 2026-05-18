@@ -2,6 +2,7 @@ import { ActionSchema, type Action } from "@pumpworld/protocol";
 import { brainSamplingTemperature, config } from "../../config.js";
 import { stripCodeFences } from "../../util/brainJson.js";
 import { acquireGeminiSlot } from "./geminiRateLimit.js";
+import { fetchWithTimeout } from "./httpFetch.js";
 import type { BrainProvider, BrainRequest, BrainResponse } from "./types.js";
 
 const DEFAULT_BASE = "https://generativelanguage.googleapis.com/v1beta";
@@ -96,14 +97,14 @@ export class GeminiProvider implements BrainProvider {
           responseMimeType: "application/json",
         },
       };
-      const r = await fetch(url, {
+      const r = await fetchWithTimeout(url, {
         method: "POST",
         headers: {
           "content-type": "application/json",
           "x-goog-api-key": this.apiKey,
         },
         body: JSON.stringify(body),
-      });
+      }, { providerLabel: "gemini" });
       const json = await r.json() as GeminiGenerateResponse & { error?: { message?: string } };
       if (!r.ok) {
         throw new Error(`gemini HTTP ${r.status}: ${JSON.stringify(json.error ?? json)}`);
@@ -120,14 +121,14 @@ export class GeminiProvider implements BrainProvider {
           maxOutputTokens: req.maxTokens,
         },
       };
-      const r = await fetch(url, {
+      const r = await fetchWithTimeout(url, {
         method: "POST",
         headers: {
           "content-type": "application/json",
           "x-goog-api-key": this.apiKey,
         },
         body: JSON.stringify(body),
-      });
+      }, { providerLabel: "gemini" });
       const json = await r.json() as GeminiGenerateResponse & { error?: { message?: string } };
       if (!r.ok) {
         throw new Error(`gemini HTTP ${r.status}: ${JSON.stringify(json.error ?? json)}`);

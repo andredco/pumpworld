@@ -14,6 +14,8 @@ export interface Memory {
 }
 
 const SHORT_CAP = 30;
+/** Hard cap on the long-term blob, in characters. Anything older drops. */
+const LONG_CAP = 6000;
 
 export function makeMemory(): Memory {
   return { short: [], long: "" };
@@ -26,6 +28,11 @@ export function rememberShort(mem: Memory, tick: number, text: string): void {
     const overflow = mem.short.splice(SHORT_CAP);
     const compact = overflow.map(e => `t${e.tick}: ${e.text}`).join(" | ");
     mem.long = mem.long ? `${mem.long}\n${compact}` : compact;
+    if (mem.long.length > LONG_CAP) {
+      // Drop oldest content; keep a "[memory truncated]" marker so the agent
+      // sees that history exists but isn't fully recalled.
+      mem.long = `[memory truncated]\n${mem.long.slice(-LONG_CAP)}`;
+    }
   }
 }
 

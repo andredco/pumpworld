@@ -1,4 +1,5 @@
 import { createReadStream, statSync, readdirSync, readFileSync } from "node:fs";
+import { createInterface } from "node:readline";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { join, resolve, basename } from "node:path";
 import type { World } from "../world/World.js";
@@ -23,7 +24,11 @@ export function createHttpServer(world: World): Server {
         if (!id) return error(res, 400, "missing id");
         const p = world.pills.get(id);
         if (!p) return error(res, 404, "not found");
-        return json(res, { pill: p, personality: personalities.get(id) ?? null });
+        // Strip private fields before serving over the public read API.
+        // AGENTS.md: "Only you know your secret unless you choose to reveal it."
+        const personality = personalities.get(id) ?? null;
+        const safePersonality = personality ? { ...personality, secret: undefined } : null;
+        return json(res, { pill: p, personality: safePersonality });
       }
       if (path === "/incidents") return json(res, [...world.incidents.values()]);
       if (path === "/trials") return json(res, [...world.trials.values()]);
@@ -161,22 +166,33 @@ function serveRunRoute(dataRoot: string, path: string, url: URL, res: ServerResp
     const toRaw = url.searchParams.get("to");
     const to = toRaw == null ? Infinity : Number(toRaw);
     const file = join(dir, "events.jsonl");
-    let body: string;
-    try { body = readFileSync(file, "utf8"); }
-    catch { return error(res, 404, "no events"); }
-    const lines = body.split("\n").filter(Boolean);
-    const out: string[] = [];
-    for (const line of lines) {
-      // Cheap tick extraction without full parse for tight ranges.
-      const m = line.match(/"tick":(\d+)/);
-      if (!m) continue;
-      const tick = Number(m[1]!);
-      if (tick < from) continue;
-      if (tick > to) break;
-      out.push(line);
-    }
+    let stat;
+    try { stat = statSync(file); } catch { return error(res, 404, "no events"); }
+    if (!stat.isFile()) return error(res, 404, "no events");
+
+    // Stream line-by-line so a multi-MB log does not load fully into memory.
     res.setHeader("content-type", "application/x-ndjson");
-    return res.end(out.join("\n"));
+    const stream = createReadStream(file, { encoding: "utf8" });
+    const rl = createInterface({ input: stream, crlfDelay: Infinity });
+    let pastRange = false;
+    rl.on("line", line => {
+      if (!line || pastRange) return;
+      const m = line.match(/"tick":(\d+)/);
+      if (!m) return;
+      const tick = Number(m[1]!);
+      if (tick < from) return;
+      if (tick > to) {
+        // Lines are written in tick order, so once we exceed `to` we can stop.
+        pastRange = true;
+        rl.close();
+        return;
+      }
+      res.write(`${line}\n`);
+    });
+    rl.on("close", () => res.end());
+    rl.on("error", err => { try { res.end(); } catch { /* */ } void err; });
+    stream.on("error", () => { try { res.end(); } catch { /* */ } });
+    return;
   }
   return error(res, 404, "unknown sub");
 }

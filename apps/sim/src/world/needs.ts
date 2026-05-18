@@ -12,11 +12,18 @@ export function tickNeeds(world: World, pill: Pill): void {
 
   const dt = 0.01 * config.needDrainScale;
   const sleeping = pill.status === "sleeping";
+  const incarcerated = pill.status === "incarcerated";
   // Hunger drains slower while sleeping (you're not exerting), much slower for incarcerated.
-  pill.needs.hunger  = clamp(pill.needs.hunger  - dt * (sleeping ? 0.3 : 1.0), 0, 1);
-  pill.needs.energy  = clamp(pill.needs.energy  - dt * (sleeping ? -3 : 0.7), 0, 1);
-  pill.needs.social  = clamp(pill.needs.social  - dt * (sleeping ? 0.1 : 0.5), 0, 1);
-  pill.needs.purpose = clamp(pill.needs.purpose - dt * 0.3, 0, 1);
+  // The state pays for jail food with much slower hunger; otherwise multi-tick
+  // sentences are a death penalty in disguise (no eat action lands in a cell).
+  const hungerMul = sleeping ? 0.3 : incarcerated ? 0.2 : 1.0;
+  const energyMul = sleeping ? -3 : incarcerated ? 0.4 : 0.7;
+  const socialMul = sleeping ? 0.1 : incarcerated ? 0.7 : 0.5;
+  const purposeMul = incarcerated ? 0.6 : 0.3;
+  pill.needs.hunger  = clamp(pill.needs.hunger  - dt * hungerMul,  0, 1);
+  pill.needs.energy  = clamp(pill.needs.energy  - dt * energyMul,  0, 1);
+  pill.needs.social  = clamp(pill.needs.social  - dt * socialMul,  0, 1);
+  pill.needs.purpose = clamp(pill.needs.purpose - dt * purposeMul, 0, 1);
 
   if (pill.needs.hunger <= 0 || pill.needs.energy <= 0) {
     // Slow bleed — gives agents time to recover before death from neglected needs.

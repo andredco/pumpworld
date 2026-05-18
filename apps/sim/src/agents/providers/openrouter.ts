@@ -1,6 +1,7 @@
 import { ActionSchema, type Action } from "@pumpworld/protocol";
 import { brainSamplingTemperature } from "../../config.js";
 import { stripCodeFences } from "../../util/brainJson.js";
+import { fetchWithTimeout } from "./httpFetch.js";
 import type { BrainProvider, BrainRequest, BrainResponse } from "./types.js";
 
 interface OpenAIChatMsg { role: "system" | "user" | "assistant"; content: string }
@@ -41,7 +42,7 @@ export class OpenRouterProvider implements BrainProvider {
       response_format: { type: "json_object" } as const,
       ...(req.seed != null ? { seed: req.seed } : {}),
     };
-    const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const r = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -51,7 +52,7 @@ export class OpenRouterProvider implements BrainProvider {
         "x-title": this.appTitle,
       },
       body: JSON.stringify(body),
-    });
+    }, { providerLabel: "openrouter" });
     if (!r.ok) throw new Error(`openrouter HTTP ${r.status}: ${await r.text()}`);
     const json = await r.json() as OpenAIChatResp;
     const raw = json.choices?.[0]?.message?.content ?? "";

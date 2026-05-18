@@ -10,6 +10,7 @@ import { tickDayNight } from "./daynight.js";
 import { tickExecutions } from "./executions.js";
 import { tickTasks } from "./tasks.js";
 import { tickPump } from "./pump.js";
+import { personalities } from "./seed.js";
 import { tickMarket, type MarketState } from "../token/influence.js";
 import type { TokenFeed } from "../token/TokenFeed.js";
 import type { World } from "./World.js";
@@ -19,6 +20,18 @@ export interface TickContext {
   onBrain: (pillId: string, thought: string, intent: string | null) => void;
   tokenFeed: TokenFeed;
   marketState: MarketState;
+}
+
+/** Constitution: "Only you know your secret unless you choose to reveal it."
+ *  Models routinely echo their system-prompt secret verbatim in `thought`.
+ *  Strip exact-substring occurrences before the thought leaves the simulator
+ *  via the brain WS channel or the persisted event log. Speech (`speak.text`)
+ *  and blog posts are never redacted — those are deliberate channels and
+ *  letting them through preserves the "choose to reveal it" half of the rule. */
+function redactSecret(pillId: string, thought: string): string {
+  const secret = personalities.get(pillId)?.secret;
+  if (!secret || secret.length < 4) return thought;
+  return thought.split(secret).join("[redacted secret]");
 }
 
 /**
@@ -51,8 +64,9 @@ export function runTick(world: World, ctx: TickContext): WorldEvent[] {
     if (!decision) continue;
     const pill = world.pills.get(decision.pillId);
     if (!pill) continue;
-    ctx.onBrain(decision.pillId, decision.thought, decision.action.kind);
-    world.emit({ kind: "pill_thought", pillId: decision.pillId, text: decision.thought });
+    const safeThought = redactSecret(decision.pillId, decision.thought);
+    ctx.onBrain(decision.pillId, safeThought, decision.action.kind);
+    world.emit({ kind: "pill_thought", pillId: decision.pillId, text: safeThought });
     resolveAction(world, pill, decision.action);
   }
 

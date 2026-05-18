@@ -1,6 +1,7 @@
 import { ActionSchema, type Action } from "@pumpworld/protocol";
 import { brainSamplingTemperatureAnthropic } from "../../config.js";
 import { stripCodeFences } from "../../util/brainJson.js";
+import { fetchWithTimeout } from "./httpFetch.js";
 import type { BrainProvider, BrainRequest, BrainResponse } from "./types.js";
 
 interface AnthropicResp {
@@ -31,7 +32,7 @@ export class AnthropicProvider implements BrainProvider {
       max_tokens: req.maxTokens,
       temperature: brainSamplingTemperatureAnthropic(),
     };
-    const r = await fetch(`${this.baseUrl}/messages`, {
+    const r = await fetchWithTimeout(`${this.baseUrl}/messages`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -39,7 +40,7 @@ export class AnthropicProvider implements BrainProvider {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify(body),
-    });
+    }, { providerLabel: "anthropic" });
     if (!r.ok) throw new Error(`anthropic HTTP ${r.status}: ${await r.text()}`);
     const json = await r.json() as AnthropicResp;
     const raw = json.content?.find(c => c.type === "text")?.text ?? "";

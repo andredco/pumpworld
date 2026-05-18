@@ -111,14 +111,26 @@ async function main() {
 
   const interval = setInterval(() => {
     const t0 = Date.now();
-    const events = runTick(world, {
-      agents,
-      onBrain: (pillId, thought, intent) => ws.broadcastBrain(pillId, thought, intent),
-      tokenFeed,
-      marketState,
-    });
-    log.append(events);
-    ws.broadcastEvents(events);
+    let events: ReturnType<typeof runTick> = [];
+    try {
+      events = runTick(world, {
+        agents,
+        onBrain: (pillId, thought, intent) => ws.broadcastBrain(pillId, thought, intent),
+        tokenFeed,
+        marketState,
+      });
+    } catch (err) {
+      // A tick must never kill the process. Log loudly and skip downstream work
+      // for this beat — the next tick will pick up where the world is now.
+      console.error(`[sim] tick ${world.meta.tick} threw:`, err);
+      return;
+    }
+    try {
+      log.append(events);
+      ws.broadcastEvents(events);
+    } catch (err) {
+      console.error("[sim] post-tick io failed:", err);
+    }
 
     const aliveCount = world.alivePills().length;
     const queueDepth = [...agents.values()].filter(a => !!(a as unknown as { pendingDecision: unknown }).pendingDecision).length;
@@ -127,9 +139,13 @@ async function main() {
     lastWallMs = now;
     const instTps = dt > 0 ? 1000 / dt : 0;
     tpsAvg = tpsAvg === 0 ? instTps : tpsAvg * 0.9 + instTps * 0.1;
-    ws.broadcastMetrics(tpsAvg, aliveCount, queueDepth, world.meta.tick);
-    // Send the live meta (incl. token stats + influence) every tick. Tiny payload.
-    ws.broadcastMeta(world.meta);
+    try {
+      ws.broadcastMetrics(tpsAvg, aliveCount, queueDepth, world.meta.tick);
+      // Send the live meta (incl. token stats + influence) every tick. Tiny payload.
+      ws.broadcastMeta(world.meta);
+    } catch (err) {
+      console.error("[sim] broadcast failed:", err);
+    }
 
     if (world.meta.tick - lastSnapshotTick >= 60) {
       lastSnapshotTick = world.meta.tick;
