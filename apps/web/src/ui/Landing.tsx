@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { HTTP_BASE } from "../runtimeConfig.js";
 import { PillAvatar } from "./PillAvatar.js";
 import { TOKEN } from "./token.js";
+import { X_URL, XGlyph } from "./xLink.js";
 
 interface Props { onEnter: () => void; onReplay?: () => void }
 
@@ -186,6 +187,23 @@ export function Landing({ onEnter, onReplay }: Props) {
             <ConnPill live={live} />
             <a href="#docs" style={navLink}>Docs</a>
             {onReplay && <button onClick={onReplay} style={navLink as React.CSSProperties}>Replays</button>}
+            <a
+              href={X_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Follow @thepillsworld on X"
+              aria-label="Follow @thepillsworld on X"
+              style={{
+                ...navLink,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 32, height: 32,
+                padding: 0,
+              }}
+            >
+              <XGlyph size={13} />
+            </a>
             <button onClick={onEnter} style={navBtnGreen}>Watch live →</button>
           </div>
         </nav>
@@ -381,9 +399,17 @@ export function Landing({ onEnter, onReplay }: Props) {
           fontSize: 11, color: PDIM,
         }}>
           <span>Pill World · MIT · the world is owned by the pills</span>
-          <span style={{ display: "flex", gap: 18 }}>
+          <span style={{ display: "flex", gap: 18, alignItems: "center" }}>
             <a href="#docs" style={footerLink}>documentation</a>
             <a href="#docs/agents" style={footerLink}>agents</a>
+            <a
+              href={X_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ ...footerLink, display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <XGlyph size={11} /> @thepillsworld
+            </a>
           </span>
         </footer>
       </main>

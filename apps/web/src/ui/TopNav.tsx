@@ -1,4 +1,5 @@
 import { useWorld } from "../store/worldStore.js";
+import { X_URL, XGlyph } from "./xLink.js";
 
 export type NavTab = "live" | "characters" | "blogs";
 
@@ -62,6 +63,34 @@ export function TopNav({ active, onChange, onAbout, onReplays }: Props) {
       <span style={{ width: 1, height: 20, background: "var(--pw-border)", margin: "0 4px" }} />
       <button style={tab("live" as NavTab, "Replays")} onClick={onReplays}>⟲ Replays</button>
       <button style={tab("live" as NavTab, "About")} onClick={onAbout}>About</button>
+      <a
+        href={X_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Follow @thepillsworld on X"
+        aria-label="Follow @thepillsworld on X"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 32, height: 32,
+          marginLeft: 2,
+          borderRadius: 99,
+          color: "var(--pw-text-dim)",
+          textDecoration: "none",
+          transition: "all 140ms ease",
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.color = "var(--pw-text)";
+          e.currentTarget.style.background = "rgba(255,255,255,0.10)";
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.color = "var(--pw-text-dim)";
+          e.currentTarget.style.background = "transparent";
+        }}
+      >
+        <XGlyph size={13} />
+      </a>
     </div>
   );
 }
