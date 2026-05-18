@@ -46,6 +46,16 @@ After linking, Railway applies from JSON:
 
 On **`@pumpworld/web`** only, you can also set variable **`RAILWAY_DOCKERFILE_PATH`** = **`Dockerfile.web`** ([docs](https://docs.railway.com/variables/reference)). Still link **`railway.web.json`** so **`buildCommand`** and **watchPatterns** stay correct.
 
+### If **`@pumpworld/web`** deploy logs show **`vite`** + **`localhost:5173`**
+
+Railway is running **`npm run dev`** (dev server — wrong). Prefer **`railway.web.json`** → **`Dockerfile.web`** (**§2**).
+
+If you stay on **Railpack/npm** instead:
+
+1. **Deploy → Custom Start Command:** **`npm run start -w @pumpworld/web`**
+2. **Build → Custom Build Command:** **`npm run build -w @pumpworld/web`** (or empty only if Railway already runs that build).
+3. **`npm run start`** runs **`vite preview`** on **`PORT`** and **`0.0.0.0`** (see **`apps/web/vite.config.ts`**).
+
 ---
 
 ## 3. Sim image
