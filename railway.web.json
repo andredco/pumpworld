@@ -1,20 +1,21 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "builder": "DOCKERFILE",
-    "dockerfilePath": "Dockerfile.web",
-    "buildCommand": null,
+    "builder": "RAILPACK",
+    "buildCommand": "NPM_CONFIG_PRODUCTION=false npm ci && npm run build -w @pumpworld/web",
     "watchPatterns": [
       "/Dockerfile.web",
+      "/Dockerfile",
       "/package.json",
       "/package-lock.json",
       "/tsconfig.base.json",
       "/packages/**",
-      "/apps/web/**"
+      "/apps/web/**",
+      "/railway.web.json"
     ]
   },
   "deploy": {
-    "startCommand": null,
+    "startCommand": "npm run start -w @pumpworld/web",
     "healthcheckPath": "/",
     "restartPolicyType": "ON_FAILURE"
   }

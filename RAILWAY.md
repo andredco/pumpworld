@@ -36,27 +36,26 @@ Repo files:
 4. Remove **any inline / pasted `railway.toml`** in Railway (old UI copies can override Git and keep showing “set in railway.toml”).
 5. **Deploy** tab: **Custom Start Command** → **empty** everywhere (image **`CMD`** runs the process).
 
-After linking, Railway applies from JSON:
+After linking **`railway.sim.json`** / **`railway.web.json`**, Railway merges **build + deploy** from that file (config overrides auto-detected Vite **`dev`** for web).
 
-- Correct **`dockerfilePath`** (`Dockerfile` vs **`Dockerfile.web`**)
-- **`buildCommand`: null** → clears mistaken **`npm run build --workspace=…`** entries
-- **`watchPatterns`** → shared edits (e.g. **`packages/**`**) redeploy **both**; **`Dockerfile`** vs **`Dockerfile.web`** changes redeploy **only** the matching service
+| File | Builder | Notes |
+|------|---------|--------|
+| **`railway.sim.json`** | **Dockerfile** (`Dockerfile`) | **`startCommand`**: image **`CMD`** |
+| **`railway.web.json`** | **Railpack** | Explicit **`npm ci --include=dev`** → **`build`** → **`npm run start -w @pumpworld/web`** (**`vite preview`** on **`PORT`**) |
 
-### Fallback (optional)
+5. **Deploy** tab: **Custom Start Command** → **empty** on **both** (config-as-code supplies commands). Clear any **`npm run dev`** overrides left over from the template.
 
-On **`@pumpworld/web`** only, you can also set variable **`RAILWAY_DOCKERFILE_PATH`** = **`Dockerfile.web`** ([docs](https://docs.railway.com/variables/reference)). Still link **`railway.web.json`** so **`buildCommand`** and **watchPatterns** stay correct.
+### Optional: Docker image for web instead
 
-### If **`@pumpworld/web`** deploy logs show **`vite`** + **`localhost:5173`**
+Use **`Dockerfile.web`** by replacing **`railway.web.json`** **`build`** section with **`builder: DOCKERFILE`**, **`dockerfilePath: Dockerfile.web`**, **`buildCommand: null`**, **`deploy.startCommand: null`** — or keep the committed **`railway.web.json`** Railpack flow above.
 
-Railway is running **`npm run dev`** (dev server — wrong). Prefer **`railway.web.json`** → **`Dockerfile.web`** (**§2**).
+### Fallback (sim Dockerfile env var)
 
-If you stay on **Railpack/npm** instead:
+On **`@pumpworld/web`** only: **`RAILWAY_DOCKERFILE_PATH`** = **`Dockerfile.web`** only helps **Docker** builds; it does not fix Railpack **`dev`** by itself.
 
-1. **Deploy → Custom Start Command:** **`npm run start -w @pumpworld/web`**
-2. **Build → Custom Build Command:** **`npm run build -w @pumpworld/web`** (or empty only if Railway already runs that build).
-3. **`npm run start`** runs **`vite preview`** on **`PORT`** and **`0.0.0.0`** (see **`apps/web/vite.config.ts`**).
+### If **`@pumpworld/web`** deploy logs still show **`vite`** + **`localhost:5173`**
 
----
+The service is **not** loading **`/railway.web.json`** (wrong config path, inline **`railway.toml`** in the dashboard, or dashboard **Custom Start Command** still set to **`dev`**). Fix **§2**, redeploy, and confirm the deployment details page shows settings sourced from **`railway.web.json`**.
 
 ## 3. Sim image
 
