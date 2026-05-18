@@ -5,8 +5,9 @@
  */
 
 import type { WorldEvent, WorldSnapshot } from "@pumpworld/protocol";
+import { HTTP_BASE } from "../runtimeConfig.js";
 
-const BASE = __PUMPWORLD_HTTP__;
+const BASE = HTTP_BASE;
 
 export interface RunSummary {
   id: string;

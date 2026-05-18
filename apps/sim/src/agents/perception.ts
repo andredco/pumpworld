@@ -139,6 +139,44 @@ export function buildPerception(world: World, pill: Pill, memory: Memory): strin
     }
   }
 
+  // -------- Town pulse: quick summary so pills know what's happening at
+  // large, beyond the ~6m of speech they directly hear. Cheap to assemble
+  // and gives the brain real material to react to, blog about, or argue over.
+  const recentBlogs = [...world.blogPosts.values()]
+    .sort((a, b) => b.publishedAtTick - a.publishedAtTick)
+    .slice(0, 3);
+  const myLastBlog = [...world.blogPosts.values()]
+    .filter(p => p.authorPillId === pill.id)
+    .sort((a, b) => b.publishedAtTick - a.publishedAtTick)[0];
+  const ticksSinceMyLastBlog = myLastBlog ? world.meta.tick - myLastBlog.publishedAtTick : Infinity;
+  const blogReady = ticksSinceMyLastBlog >= 25;
+  if (recentBlogs.length > 0 || blogReady) {
+    lines.push(`\n## Town blog`);
+    if (recentBlogs.length > 0) {
+      lines.push(`Recent posts on the public archive (anyone in town can read these):`);
+      for (const post of recentBlogs) {
+        const author = world.pills.get(post.authorPillId);
+        const who = author?.name ?? "someone";
+        const ago = world.meta.tick - post.publishedAtTick;
+        const teaser = post.body.replace(/\s+/g, " ").slice(0, 140);
+        lines.push(`- "${post.title}" by ${who} (${ago}t ago): ${teaser}${post.body.length > 140 ? "…" : ""}`);
+      }
+    } else {
+      lines.push(`Nobody has posted to the town blog yet — be the first if you have something to say.`);
+    }
+    if (blogReady) {
+      const reasons: string[] = [];
+      if (pill.needs.purpose < 0.4) reasons.push("low purpose");
+      if (myIncidents.length > 0) reasons.push("you witnessed an incident");
+      if (myTrials.length > 0) reasons.push("you're entangled in a trial");
+      if (inf && Math.abs(inf.mood) > 0.4) reasons.push("the air feels charged");
+      const reasonStr = reasons.length > 0 ? ` (${reasons.join("; ")})` : "";
+      lines.push(`You can publish a **blog_post** right now if you want to${reasonStr}. Free-form. The whole town reads. Use your own voice — diary, manifesto, gossip, theory, whatever.`);
+    } else {
+      lines.push(`Your last post was ${ticksSinceMyLastBlog}t ago. Cooldown ~25t between posts.`);
+    }
+  }
+
   lines.push(`\n# MEMORY`);
   lines.push(renderMemory(memory));
 

@@ -46,6 +46,17 @@ export function resolveAction(world: World, pill: Pill, action: Action): boolean
   }
   pill.currentIntent = action.kind;
 
+  // Movement is path-persistent: move_to / follow set pill.pathTarget below.
+  // Any other concrete action means the pill is busy doing something here,
+  // so clear the persistent path so they don't keep drifting away under us.
+  // (idle and speak deliberately keep the path: an idle pill at a destination
+  //  may still be slowly arriving; a speak with someone in earshot doesn't
+  //  necessarily mean they've stopped walking.)
+  const KEEPS_PATH = new Set(["move_to", "follow", "idle", "speak"]);
+  if (!KEEPS_PATH.has(action.kind)) {
+    pill.pathTarget = null;
+  }
+
   switch (action.kind) {
     case "idle":
       return true;
@@ -55,10 +66,13 @@ export function resolveAction(world: World, pill: Pill, action: Action): boolean
       world.emit({ kind: "pill_spoke", pillId: pill.id, to: action.to, text: action.text });
       pill.needs.social = clamp(pill.needs.social + 0.08, 0, 1);
       for (const a of audience) a.needs.social = clamp(a.needs.social + 0.035, 0, 1);
+      // Speaking doesn't necessarily mean stopping — keep walking.
       return true;
     }
 
     case "move_to": {
+      // Persist destination so the body keeps walking between brain ticks.
+      pill.pathTarget = { x: action.target.x, y: 0, z: action.target.z };
       stepTowards(world, pill, action.target);
       return true;
     }
@@ -66,6 +80,8 @@ export function resolveAction(world: World, pill: Pill, action: Action): boolean
     case "follow": {
       const target = world.pills.get(action.pillId);
       if (!target || target.status === "dead" || target.status === "exiled") return false;
+      // Stay one stride behind, persist so they keep tracking next tick.
+      pill.pathTarget = { x: target.position.x, y: 0, z: target.position.z };
       stepTowards(world, pill, target.position);
       return true;
     }
@@ -321,12 +337,14 @@ export function resolveAction(world: World, pill: Pill, action: Action): boolean
     }
 
     case "blog_post": {
-      // Anyone alive can publish. We rate-limit to one post per ~40 ticks per pill
-      // so a runaway model doesn't spam the world.
+      // Anyone alive can publish. Rate-limit: ~1 post per 25 ticks per pill
+      // (≈ 50 wall-clock seconds at 2s ticks) so a runaway model can't spam,
+      // but spontaneous "I had to write this down" beats land in real time
+      // instead of being lost to a 40-tick wait.
       const recent = [...world.blogPosts.values()]
         .filter(p => p.authorPillId === pill.id)
         .sort((a, b) => b.publishedAtTick - a.publishedAtTick)[0];
-      if (recent && world.meta.tick - recent.publishedAtTick < 40) return false;
+      if (recent && world.meta.tick - recent.publishedAtTick < 25) return false;
 
       const id = nanoid(10);
       const post = {

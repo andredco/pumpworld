@@ -191,11 +191,17 @@ export function Pill({ pill }: Props) {
         </group>
       )}
 
-      {/* HP + energy bars + name label */}
+      {/* HP + energy bars + name label.
+       *  occlude: hide when behind geometry (so a row of pills doesn't show
+       *  five overlapping nametags through walls). distanceFactor controls
+       *  how aggressively they shrink on zoom-out — large enough that you
+       *  can still read names from the orbit hero shot but they don't take
+       *  over the screen when you pull the camera way back. */}
       <Html
         position={[0, h + legH + 0.5, 0]}
-        distanceFactor={14}
+        distanceFactor={9}
         center
+        occlude
         zIndexRange={[10, 0]}
         style={{ pointerEvents: "none", userSelect: "none" }}
       >

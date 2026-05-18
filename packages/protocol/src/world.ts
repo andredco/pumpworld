@@ -115,6 +115,14 @@ export interface Pill {
   currentTask: string;
   /** Last action the pill committed to (set by the brain, executed by the world). */
   currentIntent: string | null;
+  /**
+   * The world position the pill is walking toward right now, persisted between
+   * brain ticks. The brain decides *where*; the body keeps walking there in
+   * the background each tick so motion looks continuous instead of frozen
+   * between every think. Cleared automatically when the pill arrives or when
+   * the next non-movement action overrides it.
+   */
+  pathTarget?: Vec3 | null;
   /** Birth tick — for age/lineage. */
   bornAtTick: number;
   /** Death tick, if dead. */

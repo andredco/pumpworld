@@ -10,6 +10,10 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
     />
+    <!-- Runtime config: written at container start by serve-production.mjs.
+         Sets window.__PUMPWORLD_RUNTIME__ so the same bundle works in any
+         deploy (Railway, local, custom domain) without rebuilding. -->
+    <script src="/runtime-config.js"></script>
     <style>
       :root {
         --pw-bg: #07090c;

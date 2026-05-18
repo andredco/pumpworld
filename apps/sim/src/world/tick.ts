@@ -10,6 +10,7 @@ import { tickDayNight } from "./daynight.js";
 import { tickExecutions } from "./executions.js";
 import { tickTasks } from "./tasks.js";
 import { tickPump } from "./pump.js";
+import { tickBodies } from "./bodyTick.js";
 import { personalities } from "./seed.js";
 import { tickMarket, type MarketState } from "../token/influence.js";
 import type { TokenFeed } from "../token/TokenFeed.js";
@@ -69,6 +70,11 @@ export function runTick(world: World, ctx: TickContext): WorldEvent[] {
     world.emit({ kind: "pill_thought", pillId: decision.pillId, text: safeThought });
     resolveAction(world, pill, decision.action);
   }
+
+  // 4b. continuous body motion: pills keep walking toward whatever target
+  //     the brain last set, so we get smooth animation between thinks
+  //     instead of one-step shuffle-freeze cycles.
+  tickBodies(world);
 
   // sleeping pills wake when energy is full
   for (const p of world.pills.values()) {

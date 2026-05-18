@@ -80,6 +80,29 @@ function ensureDist() {
 
 ensureDist();
 
+/**
+ * Write /runtime-config.js inside dist/ from PUMPWORLD_HTTP_URL / PUMPWORLD_WS_URL.
+ *
+ * The same prebuilt bundle is served everywhere; this lets each deploy point
+ * the viewer at a different sim host without rebuilding the bundle. If the
+ * env vars are missing, the bundled script keeps its empty defaults and
+ * runtimeConfig.ts falls back to window.location (sane for single-origin
+ * deploys where /api and / share a host).
+ */
+function writeRuntimeConfig() {
+  const httpUrl = (process.env.PUMPWORLD_HTTP_URL ?? "").trim();
+  const wsUrl = (process.env.PUMPWORLD_WS_URL ?? "").trim();
+  const cfg = `/* generated at container start */\nwindow.__PUMPWORLD_RUNTIME__ = ${JSON.stringify({ httpUrl, wsUrl })};\n`;
+  const out = path.join(distDir, "runtime-config.js");
+  try {
+    fs.writeFileSync(out, cfg, "utf8");
+    console.error(`[web/start] runtime-config: http="${httpUrl || "(origin)"}" ws="${wsUrl || "(origin)"}"`);
+  } catch (err) {
+    console.error(`[web/start] could not write runtime-config: ${err.message}`);
+  }
+}
+writeRuntimeConfig();
+
 const port = Number(process.env.PORT);
 const p = Number.isFinite(port) && port > 0 ? port : 4173;
 const listen = `tcp://0.0.0.0:${p}`;

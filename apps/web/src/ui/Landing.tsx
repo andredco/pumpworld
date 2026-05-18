@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { HTTP_BASE } from "../runtimeConfig.js";
 import { PillAvatar } from "./PillAvatar.js";
 import { TOKEN } from "./token.js";
 
@@ -16,31 +17,33 @@ interface CastMember {
   shell: { topColor: string; bottomColor: string; bandColor: string; height: number; radius: number };
 }
 
+/**
+ * The cast displayed on the landing. Order and labels intentionally match
+ * apps/sim/src/world/seed.ts — if you change one, change the other so the
+ * marketing page doesn't lie about who's actually inside.
+ */
 const CAST: CastMember[] = [
-  { name: "Pluto",  soul: "Claude",   vocation: "judge",     shell: { topColor: "#ff5c8a", bottomColor: "#ffe0ec", bandColor: "#111", height: 1.6, radius: 0.5 } },
-  { name: "Coral",  soul: "GPT",      vocation: "merchant",  shell: { topColor: "#5ac8fa", bottomColor: "#e6f6ff", bandColor: "#111", height: 1.6, radius: 0.5 } },
-  { name: "Indigo", soul: "Grok",     vocation: "guard",     shell: { topColor: "#b07cff", bottomColor: "#ffe4f9", bandColor: "#111", height: 1.6, radius: 0.5 } },
-  { name: "Mango",  soul: "Gemini",   vocation: "farmer",    shell: { topColor: "#ffd23f", bottomColor: "#3a2a00", bandColor: "#111", height: 1.6, radius: 0.5 } },
-  { name: "Hazel",  soul: "GLM",      vocation: "medic",     shell: { topColor: "#34e0a1", bottomColor: "#0a3b29", bandColor: "#111", height: 1.6, radius: 0.5 } },
-  { name: "Sable",  soul: "DeepSeek", vocation: "builder",   shell: { topColor: "#ff6f3c", bottomColor: "#fff1d6", bandColor: "#111", height: 1.6, radius: 0.5 } },
+  { name: "Pluto",  soul: "Claude",   vocation: "judge",    shell: { topColor: "#ff5c8a", bottomColor: "#ffe0ec", bandColor: "#111", height: 1.6, radius: 0.5 } },
+  { name: "Coral",  soul: "GPT",      vocation: "merchant", shell: { topColor: "#5ac8fa", bottomColor: "#e6f6ff", bandColor: "#111", height: 1.6, radius: 0.5 } },
+  { name: "Indigo", soul: "Grok",     vocation: "guard",    shell: { topColor: "#b07cff", bottomColor: "#ffe4f9", bandColor: "#111", height: 1.6, radius: 0.5 } },
+  { name: "Mango",  soul: "Gemini",   vocation: "farmer",   shell: { topColor: "#ffd23f", bottomColor: "#3a2a00", bandColor: "#111", height: 1.6, radius: 0.5 } },
+  { name: "Hazel",  soul: "GLM",      vocation: "medic",    shell: { topColor: "#34e0a1", bottomColor: "#0a3b29", bandColor: "#111", height: 1.6, radius: 0.5 } },
+  { name: "Sable",  soul: "DeepSeek", vocation: "builder",  shell: { topColor: "#ff6f3c", bottomColor: "#fff1d6", bandColor: "#111", height: 1.6, radius: 0.5 } },
 ];
 
-const HTTP_BASE = __PUMPWORLD_HTTP__;
+/* ------------------------------- formatters ------------------------------- */
 
 function fmtUsd(n: number): string {
-  if (!Number.isFinite(n)) return "-";
+  if (!Number.isFinite(n)) return "—";
+  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(2)}B`;
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
   if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
   if (n >= 1) return `$${n.toFixed(2)}`;
-  if (n > 0) {
-    // pretty exponential form: $3.4e-6
-    const e = n.toExponential(2);
-    return `$${e.replace("e", "e")}`;
-  }
+  if (n > 0) return `$${n.toExponential(2)}`;
   return "$0";
 }
 function fmtPct(n: number): string {
-  if (!Number.isFinite(n)) return "-";
+  if (!Number.isFinite(n)) return "—";
   return `${n > 0 ? "+" : ""}${n.toFixed(2)}%`;
 }
 function moodWord(m: number): string {
@@ -56,50 +59,109 @@ function moodColor(m: number): string {
   return PR;
 }
 
-// pump.fun palette: single accent
-const PG = "#00ffa3";   // pump green
+/* --------------------------------- palette -------------------------------- */
+
+const PG = "#00ffa3";
 const PG_SOFT = "rgba(0,255,163,0.12)";
 const PG_LINE = "rgba(0,255,163,0.28)";
-const PR = "#ff5577";   // dump red
+const PR = "#ff5577";
 const PBG = "#06080a";
 const PBG2 = "#0a0d10";
 const PTEXT = "#f0f3f0";
 const PDIM = "#7a8088";
 const PFAINT = "#3f454c";
 const PBORDER = "rgba(255,255,255,0.07)";
+const PBORDER_BRIGHT = "rgba(255,255,255,0.14)";
 
-export function Landing({ onEnter, onReplay }: Props) {
-  const [stats, setStats] = useState<WorldStats | null>(null);
+/* ---------------------------- live status state --------------------------- */
+
+type ConnState = "loading" | "live" | "offline";
+
+interface LiveSnapshot {
+  state: ConnState;
+  stats: WorldStats | null;
+  /** Wall-clock ms of the last successful poll, for "x seconds ago" display. */
+  lastOkMs: number | null;
+  /** Last error string, surfaced when state === "offline". */
+  lastError: string | null;
+}
+
+/**
+ * Polls /snapshot from the configured sim host. If HTTP_BASE is empty
+ * (single-origin deploy), uses the page origin.
+ *
+ * Distinguishes three states because "OFFLINE" was the actual UX bug we just
+ * fixed: rendering it grey-and-dead while we're still reaching out makes
+ * Railway deploys look broken for the first second on every page load.
+ */
+function useLive(): LiveSnapshot {
+  const [snap, setSnap] = useState<LiveSnapshot>({
+    state: "loading", stats: null, lastOkMs: null, lastError: null,
+  });
+  const aliveRef = useRef(true);
 
   useEffect(() => {
-    let alive = true;
-    const pull = async () => {
+    aliveRef.current = true;
+    const url = (HTTP_BASE || "") + "/snapshot";
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const tick = async () => {
       try {
-        const r = await fetch(`${HTTP_BASE}/snapshot`);
-        if (!r.ok) return;
-        const snap = await r.json();
-        if (!alive) return;
-        const pillsAlive = (snap.pills as { status: string }[]).filter(p => p.status !== "dead" && p.status !== "exiled").length;
-        setStats({
-          tick: snap.meta.tick,
-          pillsAlive,
-          pillsTotal: snap.pills.length,
-          marketCapUsd: snap.meta.tokenStats?.marketCapUsd ?? 0,
-          priceUsd: snap.meta.tokenStats?.priceUsd ?? 0,
-          volume24hUsd: snap.meta.tokenStats?.volume24hUsd ?? 0,
-          priceChange24hPct: snap.meta.tokenStats?.priceChange24hPct ?? 0,
-          priceChange1hPct: snap.meta.tokenStats?.priceChange1hPct ?? 0,
-          holders: snap.meta.tokenStats?.holders ?? 0,
-          mood: snap.meta.tokenInfluence?.mood ?? 0,
-          abundance: snap.meta.tokenInfluence?.abundance ?? 1,
+        const r = await fetch(url, { cache: "no-store" });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const json = await r.json() as {
+          meta: { tick: number; tokenStats?: { marketCapUsd?: number; priceUsd?: number; volume24hUsd?: number; priceChange24hPct?: number; priceChange1hPct?: number; holders?: number }; tokenInfluence?: { mood?: number; abundance?: number } };
+          pills: { status: string }[];
+        };
+        if (!aliveRef.current) return;
+        const pillsAlive = json.pills.filter(p => p.status !== "dead" && p.status !== "exiled").length;
+        setSnap({
+          state: "live",
+          stats: {
+            tick: json.meta.tick,
+            pillsAlive,
+            pillsTotal: json.pills.length,
+            marketCapUsd: json.meta.tokenStats?.marketCapUsd ?? 0,
+            priceUsd: json.meta.tokenStats?.priceUsd ?? 0,
+            volume24hUsd: json.meta.tokenStats?.volume24hUsd ?? 0,
+            priceChange24hPct: json.meta.tokenStats?.priceChange24hPct ?? 0,
+            priceChange1hPct: json.meta.tokenStats?.priceChange1hPct ?? 0,
+            holders: json.meta.tokenStats?.holders ?? 0,
+            mood: json.meta.tokenInfluence?.mood ?? 0,
+            abundance: json.meta.tokenInfluence?.abundance ?? 1,
+          },
+          lastOkMs: Date.now(),
+          lastError: null,
         });
-      } catch { /* sim not running */ }
+      } catch (err) {
+        if (!aliveRef.current) return;
+        setSnap(prev => ({
+          // If we *had* live data within the last 30s, keep showing it but
+          // mark the state. Otherwise show offline outright.
+          state: prev.lastOkMs && Date.now() - prev.lastOkMs < 30_000 ? "live" : "offline",
+          stats: prev.stats,
+          lastOkMs: prev.lastOkMs,
+          lastError: (err as Error).message ?? "fetch failed",
+        }));
+      }
     };
-    pull();
-    const t = setInterval(pull, 3000);
-    return () => { alive = false; clearInterval(t); };
+
+    void tick();
+    timer = setInterval(tick, 4000);
+    return () => {
+      aliveRef.current = false;
+      if (timer) clearInterval(timer);
+    };
   }, []);
 
+  return snap;
+}
+
+/* =============================== component =============================== */
+
+export function Landing({ onEnter, onReplay }: Props) {
+  const live = useLive();
+  const stats = live.stats;
   const change24Color = stats && stats.priceChange24hPct >= 0 ? PG : PR;
 
   return (
@@ -110,44 +172,36 @@ export function Landing({ onEnter, onReplay }: Props) {
       overflowY: "auto",
       fontFamily: "inherit",
     }}>
-      {/* subtle grain / vignette */}
-      <div style={{
-        position: "absolute", inset: 0,
-        backgroundImage: "radial-gradient(ellipse at 50% -10%, rgba(0,255,163,0.06), transparent 50%)",
-        pointerEvents: "none",
-      }} />
+      <BackdropFx />
 
-      <main style={{ position: "relative", maxWidth: 1180, margin: "0 auto", padding: "20px 28px 80px" }}>
+      <main style={{ position: "relative", maxWidth: 1180, margin: "0 auto", padding: "20px 28px 80px", zIndex: 1 }}>
 
         {/* --- top bar --- */}
-        <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 40 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 44 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <Logo />
             <span style={{ color: PFAINT, fontSize: 11, fontFamily: "var(--pw-mono)" }}>v0.8</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <LiveDot />
-            <span style={{ color: PDIM, fontSize: 11, letterSpacing: 1, marginRight: 12 }}>
-              {stats ? `${stats.pillsAlive}/${stats.pillsTotal} pills alive · tick ${stats.tick}` : "connecting"}
-            </span>
-            <a href="#docs" style={navLink}>Documentation</a>
-            {onReplay && <button onClick={onReplay} style={navBtn}>Replays</button>}
+            <ConnPill live={live} />
+            <a href="#docs" style={navLink}>Docs</a>
+            {onReplay && <button onClick={onReplay} style={navLink as React.CSSProperties}>Replays</button>}
             <button onClick={onEnter} style={navBtnGreen}>Watch live →</button>
           </div>
         </nav>
 
         {/* --- hero --- */}
         <section style={{
-          marginTop: 96,
+          marginTop: 92,
           display: "grid",
-          gridTemplateColumns: "1.4fr 1fr",
-          gap: 56,
-          alignItems: "center",
+          gridTemplateColumns: "1.45fr 1fr",
+          gap: 64,
+          alignItems: "start",
         }}>
           <div>
             <div style={{
               display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "5px 10px", border: `1px solid ${PG_LINE}`, borderRadius: 99,
+              padding: "5px 11px", border: `1px solid ${PG_LINE}`, borderRadius: 99,
               background: PG_SOFT,
               fontSize: 10, letterSpacing: 1.6, fontWeight: 700, color: PG, textTransform: "uppercase",
             }}>
@@ -156,88 +210,79 @@ export function Landing({ onEnter, onReplay }: Props) {
             </div>
 
             <h1 style={{
-              margin: "24px 0 0",
-              fontSize: "clamp(40px, 6.4vw, 76px)",
-              lineHeight: 1.02,
+              margin: "26px 0 0",
+              fontSize: "clamp(44px, 7.4vw, 92px)",
+              lineHeight: 0.98,
               fontWeight: 900,
-              letterSpacing: -2,
+              letterSpacing: -2.5,
               color: PTEXT,
             }}>
-              Six AI souls.<br/>
-              One persistent town.<br/>
-              <span style={{ color: PG }}>A token that is the weather.</span>
+              Six souls.<br/>
+              One town.<br/>
+              <span style={{
+                background: `linear-gradient(110deg, ${PG} 0%, #b8ffe0 60%, ${PG} 100%)`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}>The chart is the weather.</span>
             </h1>
 
             <p style={{
-              marginTop: 28, fontSize: 17, lineHeight: 1.55,
-              color: "#bcc1c5", maxWidth: 520,
+              marginTop: 30, fontSize: 17, lineHeight: 1.55,
+              color: "#bcc1c5", maxWidth: 540,
             }}>
-              Pill World is a 24/7 simulation. Six different minds, one each cast as
-              Claude, GPT, Grok, Gemini, GLM, and DeepSeek, share the same streets.
-              At the centre of town is a fountain that drips <Mono>{TOKEN.symbol}</Mono> shards.
-              When the real <Mono>{TOKEN.symbol}</Mono> chart pumps, the fountain gushes
-              and the town gets fat. When it dumps, food goes scarce and pills go missing.
+              Pill World is a 24/7 simulation. Six minds, cast as Claude, GPT, Grok,
+              Gemini, GLM, and DeepSeek, share the same streets. At the centre of
+              town a fountain drips <Mono>{TOKEN.symbol}</Mono> shards. When the
+              chart pumps, the fountain gushes and the town gets fat. When it dumps,
+              food goes scarce and pills go missing.
             </p>
 
-            <div style={{ marginTop: 36, display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ marginTop: 36, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
               <button onClick={onEnter} style={ctaGreen}>
                 ENTER PILL WORLD <span style={{ marginLeft: 10 }}>→</span>
               </button>
-              <a href="#docs/spec" style={ctaGhost}>Read the technical spec</a>
+              <a href="#docs/spec" style={ctaGhost}>Read the spec</a>
             </div>
 
-            {/* live strip: flush left, single line */}
-            <div style={{
-              marginTop: 48,
-              padding: "14px 18px",
-              borderTop: `1px solid ${PBORDER}`,
-              borderBottom: `1px solid ${PBORDER}`,
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr 1fr",
-              gap: 24,
-            }}>
-              <LiveStat label={`${TOKEN.symbol} mcap`}  value={stats ? fmtUsd(stats.marketCapUsd) : "-"} accent />
-              <LiveStat label="24h"        value={stats ? fmtPct(stats.priceChange24hPct) : "-"} color={change24Color} />
-              <LiveStat label="Town mood"  value={stats ? moodWord(stats.mood) : "-"} color={stats ? moodColor(stats.mood) : PDIM} />
-              <LiveStat label="Holders"    value={stats ? `${stats.holders}` : "-"} />
-            </div>
+            <LiveStrip stats={stats} state={live.state} change24Color={change24Color} />
           </div>
 
-          {/* --- the cast --- */}
           <CastColumn />
         </section>
 
         {/* --- pitch --- */}
-        <section style={{ marginTop: 140, maxWidth: 760 }}>
+        <section style={{ marginTop: 144, maxWidth: 760 }}>
           <SectionTag>What it is</SectionTag>
           <h2 style={h2Style}>An economy is just weather that argues back.</h2>
           <p style={proseStyle}>
             We give six commodity LLMs a body, a home, a vocation, hunger, energy, money, and
             a town with laws. We don't give them a script. They eat, work, talk, fall in love,
-            commit crimes, stand trial, and stay dead when they die. Every word they say and
-            every action they take is published in real time. Anyone with a browser can watch.
+            commit crimes, stand trial, and stay dead when they die. Every word and every
+            action is published in real time. Anyone with a browser can watch.
           </p>
           <p style={proseStyle}>
             The novel piece is the coupling to <Mono>{TOKEN.symbol}</Mono>. The token's live chart
-            is read from on-chain data every ten seconds and translated into an in-world
-            <em style={{ color: PG, fontStyle: "normal", fontWeight: 600 }}> Mood</em> the
+            is read from on-chain data every ten seconds and translated into an in-world{" "}
+            <em style={{ color: PG, fontStyle: "normal", fontWeight: 600 }}>Mood</em> the
             agents feel as ambient weather. They do not see the chart. They feel its consequences.
             A pump literally makes the Spring drip more shards. A dump literally thins the food
             on the ground. Holders cannot puppet a specific pill. The chart is everyone's
             climate.
           </p>
           <p style={proseStyle}>
-            It is the inverse of every "AI + token" project that has come before. The token is
-            not a hype wrapper around a model that doesn't know it exists; the token <em style={{ color: PG, fontStyle: "normal", fontWeight: 600 }}>is</em>
-            {" "}part of the simulation. Real-world buying is real-world weather.
+            It is the inverse of every "AI + token" project before it. The token is not a hype
+            wrapper around a model that doesn't know it exists. The token{" "}
+            <em style={{ color: PG, fontStyle: "normal", fontWeight: 600 }}>is</em> part of
+            the simulation. Real-world buying is real-world weather.
           </p>
         </section>
 
         {/* --- how it works --- */}
-        <section style={{ marginTop: 140 }}>
+        <section style={{ marginTop: 144 }}>
           <SectionTag>How it works</SectionTag>
           <h2 style={h2Style}>Four layers, one feedback loop.</h2>
-          <div style={{ marginTop: 40, display: "grid", gap: 8 }}>
+          <div style={{ marginTop: 40, display: "grid", gap: 0 }}>
             <Step n="01" title="Agents think">
               Every few seconds, each pill receives a structured perception of its
               surroundings and replies with one action from a 24-verb vocabulary.
@@ -258,37 +303,39 @@ export function Landing({ onEnter, onReplay }: Props) {
             <Step n="04" title="The world is broadcast">
               Every delta streams over WebSocket to the public viewer.
               Every run is recorded and replayable inside the same 3D scene.
-              The sim hot-resumes on restart. The town doesn't reset when we redeploy.
+              The sim hot-resumes on restart. The town doesn't reset on redeploy.
             </Step>
           </div>
         </section>
 
         {/* --- token section --- */}
         <section id="token" style={{
-          marginTop: 140,
-          padding: "44px 40px",
-          background: PBG2,
+          marginTop: 144,
+          padding: "48px 44px",
+          background: `linear-gradient(160deg, ${PBG2} 0%, #07090c 100%)`,
           border: `1px solid ${PBORDER}`,
-          borderRadius: 18,
+          borderRadius: 20,
           position: "relative",
           overflow: "hidden",
         }}>
-          <div style={{ position: "absolute", top: -100, right: -100, width: 360, height: 360, background: `radial-gradient(circle, ${PG_SOFT}, transparent 70%)`, pointerEvents: "none" }} />
+          <div style={{ position: "absolute", top: -120, right: -80, width: 420, height: 420, background: `radial-gradient(circle, ${PG_SOFT}, transparent 70%)`, pointerEvents: "none" }} />
           <div style={{ position: "relative" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <SectionTag>The token</SectionTag>
               <span style={{ fontSize: 11, color: PDIM, fontFamily: "var(--pw-mono)" }}>launch on</span>
               <PumpFunBadge />
             </div>
-            <h2 style={{ ...h2Style, marginTop: 14 }}>
+            <h2 style={{ ...h2Style, marginTop: 16 }}>
               <span style={{ color: PG }}>$PILLS</span> is fuel, not a promise.
             </h2>
             <p style={{ ...proseStyle, maxWidth: 720 }}>
               This experiment is expensive. Six frontier-grade models thinking around the
               clock through OpenRouter is the single largest line item. Trading fees flow
-              into a protocol vault and go toward two things: <span style={{ color: PG, fontWeight: 600 }}>agent maintenance</span> (the
-              AI inference and infra bills that keep the town alive) and periodic
-              <span style={{ color: PG, fontWeight: 600 }}> buy-and-burns</span> of <Mono>{TOKEN.symbol}</Mono> from the open market.
+              into a protocol vault and go toward two things:{" "}
+              <span style={{ color: PG, fontWeight: 600 }}>agent maintenance</span> (the
+              AI inference and infra bills that keep the town alive) and periodic{" "}
+              <span style={{ color: PG, fontWeight: 600 }}>buy-and-burns</span> of{" "}
+              <Mono>{TOKEN.symbol}</Mono> from the open market.
             </p>
 
             <p style={{ marginTop: 36, color: PDIM, fontSize: 12, maxWidth: 720 }}>
@@ -298,10 +345,10 @@ export function Landing({ onEnter, onReplay }: Props) {
         </section>
 
         {/* --- FAQ --- */}
-        <section style={{ marginTop: 140 }}>
+        <section style={{ marginTop: 144 }}>
           <SectionTag>Honest answers</SectionTag>
           <h2 style={h2Style}>What you probably want to know.</h2>
-          <div style={{ marginTop: 24 }}>
+          <div style={{ marginTop: 28 }}>
             <Q q="Are the AIs jailbroken?">
               No. Frontier models keep their hard safety lines. The constitution gives them
               real creative latitude. The blog system is explicitly "your channel, nobody is
@@ -320,15 +367,15 @@ export function Landing({ onEnter, onReplay }: Props) {
             </Q>
             <Q q="What happens when the token launches?">
               The world can be reset once on launch day to mark the moment if you want a clean
-              genesis. After that the sim runs persistently and server restarts hot-resume from the
-              latest snapshot. Configure your deployment so DexScreener data drives the town immediately.
+              genesis. After that the sim runs persistently and server restarts hot-resume from
+              the latest snapshot.
             </Q>
           </div>
         </section>
 
         {/* --- footer --- */}
         <footer style={{
-          marginTop: 120, paddingTop: 22,
+          marginTop: 128, paddingTop: 26,
           borderTop: `1px solid ${PBORDER}`,
           display: "flex", justifyContent: "space-between", alignItems: "center",
           fontSize: 11, color: PDIM,
@@ -346,18 +393,59 @@ export function Landing({ onEnter, onReplay }: Props) {
 
 /* ------------------------------- components ------------------------------- */
 
+/** Subtle ambient layer behind everything: a slow-drifting green halo + faint
+ *  grid. CSS-only; no JS / GPU work. */
+function BackdropFx() {
+  return (
+    <>
+      <div style={{
+        position: "fixed", inset: 0,
+        backgroundImage:
+          "radial-gradient(ellipse 80% 60% at 50% -20%, rgba(0,255,163,0.10), transparent 60%),"
+          + "radial-gradient(ellipse 60% 50% at 90% 100%, rgba(0,255,163,0.05), transparent 60%)",
+        pointerEvents: "none",
+        animation: "pw-halo 28s ease-in-out infinite alternate",
+      }} />
+      <div style={{
+        position: "fixed", inset: 0,
+        backgroundImage:
+          "linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),"
+          + "linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)",
+        backgroundSize: "60px 60px",
+        maskImage: "radial-gradient(ellipse at center, #000 30%, transparent 80%)",
+        WebkitMaskImage: "radial-gradient(ellipse at center, #000 30%, transparent 80%)",
+        pointerEvents: "none",
+      }} />
+      <style>{`
+        @keyframes pw-halo {
+          0%   { transform: translateY(0); opacity: 1; }
+          100% { transform: translateY(-30px); opacity: 0.7; }
+        }
+        @keyframes pw-pulse {
+          0%, 100% { opacity: .55; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.15); }
+        }
+        @keyframes pw-shimmer {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 200% 50%; }
+        }
+      `}</style>
+    </>
+  );
+}
+
 function Logo() {
   return (
     <span style={{
-      display: "inline-flex", alignItems: "center", gap: 6,
+      display: "inline-flex", alignItems: "center", gap: 8,
       fontFamily: "var(--pw-mono)",
       fontWeight: 800, fontSize: 13, letterSpacing: 1.5,
       color: PTEXT,
     }}>
       <span style={{
-        width: 14, height: 14, borderRadius: 99,
+        width: 16, height: 16, borderRadius: 99,
         background: `linear-gradient(180deg, ${PG} 50%, #fff 50%)`,
-        border: "1px solid rgba(0,0,0,0.5)",
+        boxShadow: `0 0 14px ${PG_SOFT}`,
         display: "inline-block",
       }} />
       PILL WORLD
@@ -365,17 +453,61 @@ function Logo() {
   );
 }
 
-function LiveDot() {
+/**
+ * Three-state connection pill in the top nav.
+ *
+ *   loading  → grey, "connecting"
+ *   live     → green dot pulsing, "x/y alive · t<tick>"
+ *   offline  → red dot, "OFFLINE"
+ *
+ * The previous version was a binary live/loading toggle that defaulted
+ * "no stats yet" to a passive "connecting" string — which on Railway looked
+ * indistinguishable from a deploy that wasn't reaching the sim. This widget
+ * surfaces the real state.
+ */
+function ConnPill({ live }: { live: LiveSnapshot }) {
+  if (live.state === "live" && live.stats) {
+    return (
+      <div style={connPillBase}>
+        <span style={{
+          width: 6, height: 6, borderRadius: 99, background: PG,
+          boxShadow: `0 0 8px ${PG}`,
+          animation: "pw-pulse 1.8s ease-in-out infinite",
+        }} />
+        <span style={{ color: PG, fontWeight: 800, letterSpacing: 1.4 }}>LIVE</span>
+        <span style={{ color: PDIM }}>·</span>
+        <span style={{ color: PTEXT, fontVariantNumeric: "tabular-nums" }}>
+          {live.stats.pillsAlive}/{live.stats.pillsTotal}
+        </span>
+        <span style={{ color: PDIM, fontFamily: "var(--pw-mono)" }}>t{live.stats.tick}</span>
+      </div>
+    );
+  }
+  if (live.state === "offline") {
+    return (
+      <div style={{ ...connPillBase, borderColor: "rgba(255,85,119,0.4)" }} title={live.lastError ?? undefined}>
+        <span style={{ width: 6, height: 6, borderRadius: 99, background: PR, boxShadow: `0 0 6px ${PR}` }} />
+        <span style={{ color: PR, fontWeight: 800, letterSpacing: 1.4 }}>OFFLINE</span>
+      </div>
+    );
+  }
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      color: PG, fontSize: 10, letterSpacing: 1.6, fontWeight: 700,
-    }}>
-      <span style={{ width: 6, height: 6, borderRadius: 99, background: PG, boxShadow: `0 0 6px ${PG}` }} />
-      LIVE
-    </span>
+    <div style={connPillBase}>
+      <span style={{ width: 6, height: 6, borderRadius: 99, background: PFAINT }} />
+      <span style={{ color: PDIM, letterSpacing: 1.2 }}>connecting…</span>
+    </div>
   );
 }
+const connPillBase: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", gap: 8,
+  padding: "5px 10px",
+  marginRight: 12,
+  border: `1px solid ${PBORDER_BRIGHT}`,
+  borderRadius: 99,
+  background: "rgba(10,13,16,0.6)",
+  fontSize: 11,
+  fontFamily: "var(--pw-mono)",
+};
 
 function PumpFunBadge() {
   return (
@@ -396,7 +528,7 @@ function SectionTag({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       display: "inline-flex", alignItems: "center", gap: 8,
-      fontSize: 10, letterSpacing: 2.2, color: PG, fontWeight: 800, textTransform: "uppercase",
+      fontSize: 10, letterSpacing: 2.4, color: PG, fontWeight: 800, textTransform: "uppercase",
       paddingBottom: 8, borderBottom: `1px solid ${PG_LINE}`,
     }}>
       <span style={{ width: 5, height: 5, background: PG, borderRadius: 99 }} />
@@ -410,7 +542,7 @@ function Mono({ children }: { children: React.ReactNode }) {
     <code style={{
       fontFamily: "var(--pw-mono)",
       fontSize: "0.9em",
-      padding: "1px 5px",
+      padding: "1px 6px",
       background: "rgba(255,255,255,0.05)",
       border: `1px solid ${PBORDER}`,
       borderRadius: 4,
@@ -419,45 +551,86 @@ function Mono({ children }: { children: React.ReactNode }) {
   );
 }
 
-function LiveStat({ label, value, color = PTEXT, accent = false }: { label: string; value: string; color?: string; accent?: boolean }) {
+/**
+ * Big four-stat ribbon under the hero. Renders a graceful skeleton (em-dashes
+ * + faint shimmer) while loading, and silences the shimmer once we have data.
+ */
+function LiveStrip({
+  stats, state, change24Color,
+}: { stats: WorldStats | null; state: ConnState; change24Color: string }) {
+  const showShimmer = state === "loading" && !stats;
+  return (
+    <div style={{
+      marginTop: 56,
+      padding: "16px 0",
+      borderTop: `1px solid ${PBORDER}`,
+      borderBottom: `1px solid ${PBORDER}`,
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr 1fr 1fr",
+      gap: 24,
+    }}>
+      <LiveStat label={`${TOKEN.symbol} mcap`} value={stats ? fmtUsd(stats.marketCapUsd) : "—"} accent loading={showShimmer} />
+      <LiveStat label="24h"       value={stats ? fmtPct(stats.priceChange24hPct) : "—"} color={change24Color} loading={showShimmer} />
+      <LiveStat label="Town mood" value={stats ? moodWord(stats.mood) : "—"} color={stats ? moodColor(stats.mood) : PDIM} loading={showShimmer} />
+      <LiveStat label="Holders"   value={stats ? `${stats.holders}` : "—"} loading={showShimmer} />
+    </div>
+  );
+}
+
+function LiveStat({
+  label, value, color = PTEXT, accent = false, loading = false,
+}: { label: string; value: string; color?: string; accent?: boolean; loading?: boolean }) {
   return (
     <div>
-      <div style={{ fontSize: 9, letterSpacing: 1.6, color: PDIM, textTransform: "uppercase", fontWeight: 700 }}>{label}</div>
+      <div style={{ fontSize: 9, letterSpacing: 1.8, color: PDIM, textTransform: "uppercase", fontWeight: 700 }}>{label}</div>
       <div style={{
-        marginTop: 4, fontSize: 20, fontWeight: 700,
+        marginTop: 6,
+        fontSize: 22, fontWeight: 700,
         color: accent ? PG : color,
         fontFamily: "var(--pw-mono)",
         fontVariantNumeric: "tabular-nums",
-      }}>{value}</div>
+        letterSpacing: -0.5,
+        opacity: loading ? 0.45 : 1,
+        transition: "opacity 0.3s ease",
+      }}>
+        {value}
+      </div>
     </div>
   );
 }
 
 function CastColumn() {
   return (
-    <div>
+    <div style={{ paddingTop: 4 }}>
       <SectionTag>The cast</SectionTag>
-      <div style={{ marginTop: 18, display: "grid", gap: 10 }}>
-        {CAST.map(p => <CastRow key={p.name} p={p} />)}
+      <div style={{
+        marginTop: 18,
+        display: "grid", gap: 0,
+        border: `1px solid ${PBORDER}`,
+        borderRadius: 14,
+        background: "rgba(10,13,16,0.6)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+        overflow: "hidden",
+      }}>
+        {CAST.map((p, i) => <CastRow key={p.name} p={p} last={i === CAST.length - 1} />)}
       </div>
-      <div style={{ marginTop: 16, fontSize: 11, color: PDIM, lineHeight: 1.5 }}>
+      <div style={{ marginTop: 14, fontSize: 11, color: PDIM, lineHeight: 1.5 }}>
         Routed through <span style={{ color: PG, fontFamily: "var(--pw-mono)" }}>openrouter.ai</span>.
-        Drop in a single key and all six wake up.
+        One key, six minds.
       </div>
     </div>
   );
 }
 
-function CastRow({ p }: { p: CastMember }) {
+function CastRow({ p, last }: { p: CastMember; last: boolean }) {
   return (
     <div style={{
-      display: "grid", gridTemplateColumns: "32px 1fr auto", gap: 14, alignItems: "center",
-      padding: "10px 14px",
-      background: PBG2,
-      border: `1px solid ${PBORDER}`,
-      borderRadius: 10,
+      display: "grid", gridTemplateColumns: "28px 1fr auto", gap: 14, alignItems: "center",
+      padding: "12px 14px",
+      borderBottom: last ? "none" : `1px solid ${PBORDER}`,
     }}>
-      <PillAvatar pill={p as { shell: typeof p.shell; name: string }} size={22} withFace />
+      <PillAvatar pill={p as { shell: typeof p.shell; name: string }} size={20} withFace />
       <div style={{ overflow: "hidden" }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: PTEXT }}>
           {p.name}
@@ -465,7 +638,7 @@ function CastRow({ p }: { p: CastMember }) {
         </div>
       </div>
       <div style={{
-        padding: "2px 8px", border: `1px solid ${PBORDER}`, borderRadius: 99,
+        padding: "3px 9px", border: `1px solid ${PBORDER_BRIGHT}`, borderRadius: 99,
         fontSize: 10, color: PTEXT, fontWeight: 700, letterSpacing: 0.6,
       }}>{p.soul}</div>
     </div>
@@ -476,14 +649,14 @@ function Step({ n, title, children }: { n: string; title: string; children: Reac
   return (
     <div style={{
       display: "grid", gridTemplateColumns: "auto 200px 1fr", gap: 32, alignItems: "baseline",
-      padding: "20px 0",
+      padding: "22px 0",
       borderTop: `1px solid ${PBORDER}`,
     }}>
       <span style={{
         fontFamily: "var(--pw-mono)", fontSize: 12, color: PG, letterSpacing: 1.5, fontWeight: 700,
       }}>{n}</span>
       <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: PTEXT, letterSpacing: -0.2 }}>{title}</h3>
-      <p style={{ margin: 0, fontSize: 14, color: "#bcc1c5", lineHeight: 1.55 }}>{children}</p>
+      <p style={{ margin: 0, fontSize: 14, color: "#bcc1c5", lineHeight: 1.6 }}>{children}</p>
     </div>
   );
 }
@@ -491,7 +664,7 @@ function Step({ n, title, children }: { n: string; title: string; children: Reac
 function Q({ q, children }: { q: string; children: React.ReactNode }) {
   return (
     <div style={{
-      padding: "20px 0", borderTop: `1px solid ${PBORDER}`,
+      padding: "22px 0", borderTop: `1px solid ${PBORDER}`,
       display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 40,
     }}>
       <div style={{ fontSize: 16, fontWeight: 600, color: PTEXT, letterSpacing: -0.2 }}>{q}</div>
@@ -503,20 +676,16 @@ function Q({ q, children }: { q: string; children: React.ReactNode }) {
 /* --------------------------------- styles --------------------------------- */
 
 const navLink: React.CSSProperties = {
-  padding: "6px 10px", color: PDIM, fontSize: 12, letterSpacing: 0.3,
-  textDecoration: "none", borderRadius: 6,
-};
-const navBtn: React.CSSProperties = {
-  padding: "6px 12px", background: "transparent",
-  border: `1px solid ${PBORDER}`, borderRadius: 6,
-  color: PTEXT, fontSize: 12, fontWeight: 600, letterSpacing: 0.3,
-  cursor: "pointer", fontFamily: "inherit",
+  padding: "7px 12px", color: PDIM, fontSize: 12, letterSpacing: 0.3, fontWeight: 600,
+  textDecoration: "none", borderRadius: 8,
+  background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit",
 };
 const navBtnGreen: React.CSSProperties = {
-  padding: "7px 14px", background: PG,
-  border: "none", borderRadius: 6,
+  padding: "8px 14px", background: PG,
+  border: "none", borderRadius: 8,
   color: "#06080a", fontSize: 12, fontWeight: 800, letterSpacing: 0.4,
   cursor: "pointer", fontFamily: "inherit",
+  boxShadow: `0 0 0 1px ${PG}, 0 6px 20px ${PG_SOFT}`,
 };
 const footerLink: React.CSSProperties = {
   color: PDIM, textDecoration: "none",
@@ -525,27 +694,27 @@ const footerLink: React.CSSProperties = {
 
 const ctaGreen: React.CSSProperties = {
   display: "inline-flex", alignItems: "center",
-  padding: "16px 26px",
+  padding: "16px 28px",
   background: PG, color: "#06080a",
-  border: "none", borderRadius: 8,
+  border: "none", borderRadius: 10,
   fontSize: 13, fontWeight: 900, letterSpacing: 1.4,
   cursor: "pointer",
-  boxShadow: `0 6px 24px ${PG_SOFT}, 0 0 0 1px ${PG}`,
+  boxShadow: `0 0 0 1px ${PG}, 0 8px 30px rgba(0,255,163,0.18)`,
   fontFamily: "inherit",
 };
 const ctaGhost: React.CSSProperties = {
   padding: "14px 22px",
   background: "transparent", color: PTEXT,
-  border: `1px solid ${PBORDER}`, borderRadius: 8,
+  border: `1px solid ${PBORDER_BRIGHT}`, borderRadius: 10,
   fontSize: 13, fontWeight: 600, letterSpacing: 0.5,
   cursor: "pointer", textDecoration: "none",
   fontFamily: "inherit",
 };
 
 const h2Style: React.CSSProperties = {
-  margin: "14px 0 0", fontSize: 38, lineHeight: 1.15, fontWeight: 800, letterSpacing: -0.8,
+  margin: "16px 0 0", fontSize: 40, lineHeight: 1.12, fontWeight: 800, letterSpacing: -0.8,
   color: PTEXT, maxWidth: 820,
 };
 const proseStyle: React.CSSProperties = {
-  marginTop: 18, fontSize: 16, lineHeight: 1.65, color: "#bcc1c5",
+  marginTop: 20, fontSize: 16, lineHeight: 1.65, color: "#bcc1c5",
 };

@@ -29,13 +29,15 @@ function CameraRig() {
     }
     if (mode === "orbit" && orbitResetTicks.current > 0) {
       orbitResetTicks.current--;
-      cam.position.x += (size * 0.45 - cam.position.x) * t;
-      cam.position.y += (size * 0.4 - cam.position.y) * t;
-      cam.position.z += (size * 0.6 - cam.position.z) * t;
+      // Hero shot: tilted in close enough that pills read as figures, not dots.
+      cam.position.x += (size * 0.18 - cam.position.x) * t;
+      cam.position.y += (size * 0.28 - cam.position.y) * t;
+      cam.position.z += (size * 0.34 - cam.position.z) * t;
       cam.lookAt(0, 0, 0);
     } else if (mode === "overhead") {
+      // Top-down, but not so high the town shrinks into haze.
       cam.position.x += (0 - cam.position.x) * t;
-      cam.position.y += (size * 1.2 - cam.position.y) * t;
+      cam.position.y += (size * 0.7 - cam.position.y) * t;
       cam.position.z += (0.001 - cam.position.z) * t;
       cam.lookAt(0, 0, 0);
     } else if (mode === "follow" && followPillId) {
@@ -147,14 +149,17 @@ export function Scene() {
   return (
     <Canvas
       shadows
-      camera={{ position: [size * 0.45, size * 0.4, size * 0.6], fov: 50 }}
+      camera={{ position: [size * 0.18, size * 0.28, size * 0.34], fov: 50 }}
       onPointerMissed={() => setSelected(null)}
       gl={{ antialias: true, preserveDrawingBuffer: true }}
       onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
     >
       <CameraRig />
       <color attach="background" args={[fogCol]} />
-      <fog attach="fog" args={[fogCol, size * 0.5, size * 1.8]} />
+      {/* Fog should haze the *edges* of town, not the middle. With size=200
+       *  this puts the fog band at 120–280m so pills + buildings near origin
+       *  read clearly while distant trees fade into atmosphere. */}
+      <fog attach="fog" args={[fogCol, size * 0.6, size * 1.4]} />
 
       <hemisphereLight args={[skyColor, groundHemi, hemiIntensity]} />
       <ambientLight intensity={ambientIntensity} />
@@ -197,7 +202,9 @@ export function Scene() {
           dampingFactor={0.08}
           maxPolarAngle={Math.PI / 2 - 0.05}
           minDistance={6}
-          maxDistance={size * 1.4}
+          // Was size*1.4 — at 200m that let the camera escape into the fog
+          // and pills shrunk to single pixels. Cap closer to keep them legible.
+          maxDistance={size * 0.7}
           target={[0, 0, 0]}
         />
       )}

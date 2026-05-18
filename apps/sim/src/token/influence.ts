@@ -30,13 +30,27 @@ export function newMarketState(): MarketState {
 }
 
 /**
- * Volume floor below which we consider the market "too quiet to read" —
- * any % move with so little volume behind it is noise, not a signal. We
- * fade mood toward neutral. Tuned for a pump.fun bonding-curve baseline
- * where a sub-$10k launch can fluctuate wildly on a single trade.
+ * Volume floors for confidence weighting.
+ *
+ * QUIET_FLOOR_USD: below this, % moves are pure noise (a single trader
+ *   bouncing a token). We don't fade to zero — that turned the entire
+ *   weather system off on day-1 launches when 24h volume was sub-$2k.
+ *   A small base confidence (BASELINE_CONFIDENCE) keeps the world tinted
+ *   even when the orderbook is sleepy.
+ *
+ * VOLUME_FULL_USD: above this, the market is loud enough that we trust the
+ *   move at full weight. Tuned for an early-stage pump.fun launch — lower
+ *   than a "real" market would need, because at $50k+ volume the world
+ *   should already feel the move strongly.
+ *
+ * BASELINE_CONFIDENCE: floor on confidence so a working DexScreener feed
+ *   never produces flat-zero mood. With confidence=0.25 a 25% pump still
+ *   produces mood ≈ 0.25, which is enough to flip the perception line
+ *   from "uncertain" to "rising" and matters in pills' system prompt.
  */
-const QUIET_FLOOR_USD = 2_000;
-const VOLUME_FULL_USD = 50_000;
+const QUIET_FLOOR_USD = 200;
+const VOLUME_FULL_USD = 25_000;
+const BASELINE_CONFIDENCE = 0.25;
 
 export function deriveInfluence(stats: TokenStats): TokenInfluence {
   const c1h = stats.priceChange1hPct;
@@ -44,11 +58,13 @@ export function deriveInfluence(stats: TokenStats): TokenInfluence {
   const vol = stats.volume24hUsd;
 
   // Confidence in the move = how much volume is behind it (0..1). When the
-  // market is dead-quiet, mood swings are suppressed toward neutral.
-  const confidence = clamp(
+  // market is dead-quiet, mood swings are weighted down toward neutral but
+  // never zero — even a tiny token deserves *some* weather.
+  const volumeConfidence = clamp(
     (vol - QUIET_FLOOR_USD) / (VOLUME_FULL_USD - QUIET_FLOOR_USD),
     0, 1,
   );
+  const confidence = clamp(BASELINE_CONFIDENCE + (1 - BASELINE_CONFIDENCE) * volumeConfidence, 0, 1);
 
   // Mood: weighted blend of 1h and 24h moves, faded by confidence.
   // ±25% with full confidence → ±1. Quiet markets stay calm.
@@ -100,7 +116,10 @@ export function tickMarket(world: World, feed: TokenFeed, state: MarketState): v
     state.atlPrice = stats.priceUsd;
   }
 
-  // Below the quiet floor, % moves are noise — don't fire events at all.
+  // Below the quiet floor, % moves are pure noise — don't fire BIG events
+  // (PUMP/DUMP/WHALE bullhorn lines). Mood weather still applies above via
+  // BASELINE_CONFIDENCE; this just prevents an empty orderbook from spamming
+  // "WHALE HAS SURFACED" because one wallet sneezed.
   if (stats.volume24hUsd < QUIET_FLOOR_USD) return;
 
   // PUMP — sustained 24h change ≥ +25% (cooldown 5 minutes)

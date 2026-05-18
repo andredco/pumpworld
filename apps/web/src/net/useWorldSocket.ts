@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import type { ServerToClient } from "@pumpworld/protocol";
+import { WS_BASE } from "../runtimeConfig.js";
 import { useWorld } from "../store/worldStore.js";
 
-export function useWorldSocket(url: string = __PUMPWORLD_WS__): void {
+export function useWorldSocket(url: string = WS_BASE): void {
   const setConnected = useWorld(s => s.setConnected);
   const applySnapshot = useWorld(s => s.applySnapshot);
   const applyEvents = useWorld(s => s.applyEvents);

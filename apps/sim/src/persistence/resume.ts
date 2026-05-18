@@ -91,6 +91,18 @@ export function resumeOrSeed(
   if (!snap) return { world: seedFn(), runDir: null, resumedFromTick: 0, source: "genesis" };
   try {
     const json = JSON.parse(readFileSync(snap.file, "utf8")) as WorldSnapshot;
+    // Refuse to resume a graveyard. If every pill is dead/exiled in the
+    // newest snapshot, the world has no future — restarting into it leaves
+    // viewers staring at six corpses forever (this is exactly what happened
+    // when the previous roster's API keys were invalid and every pill
+    // starved before the next deploy). Reseed instead.
+    const livingCount = json.pills.filter(p => p.status !== "dead" && p.status !== "exiled").length;
+    if (livingCount === 0) {
+      console.warn(
+        `[resume] snapshot ${snap.file} has 0 living pills; reseeding from genesis instead of resuming a graveyard.`,
+      );
+      return { world: seedFn(), runDir: null, resumedFromTick: 0, source: "genesis" };
+    }
     const world = hydrateWorldFromSnapshot(json);
     // Repair a possibly-truncated trailing line in events.jsonl from a hard
     // crash (SIGKILL mid-write), and seed the world's event-id counter past

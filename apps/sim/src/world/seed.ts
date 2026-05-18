@@ -22,9 +22,29 @@ interface RosterEntry {
 }
 
 /**
- * Six pills: most on OpenAI Chat Completions (`OPENAI_API_KEY` / `openai_api_key`),
- * one on Gemini Developer API (`GEMINI_API_KEY` / `gemini_api_key`, etc.).
- * Cast labels stay Claude / GPT / … for fiction; routing is `soul.provider` + `soul.model`.
+ * The six-pill cast.
+ *
+ * Public personas (Claude / GPT / Grok / Gemini / GLM / DeepSeek) are
+ * **fiction the viewers see**. Under the hood we route through the cheapest
+ * available API endpoints that keep the experiment running 24/7 without
+ * burning a hole in the OpenRouter / Anthropic / xAI bills:
+ *
+ *   - 3 souls on **OpenAI Chat Completions** (`OPENAI_API_KEY`) — the cheap
+ *     mini / nano tier of the GPT family.
+ *   - 3 souls on **Gemini Developer API** (`GEMINI_API_KEY`) — the free
+ *     tier (gemini-2.5-pro / -flash / -flash-lite). Each model has its own
+ *     RPM bucket on the free tier, so spreading across all three models
+ *     buys us roughly 3× the per-pill think budget vs. routing all three
+ *     pills through one Gemini slug.
+ *
+ * The constitution (AGENTS.md) says pills are "routed through OpenRouter".
+ * That's the prose framing for viewers; operationally we choose the
+ * cheapest provider per soul. If you want to flip the entire cast back to
+ * OpenRouter (one key, six minds), there's an OpenRouter provider already
+ * wired up — just edit the `provider` field below.
+ *
+ * Cast labels stay Claude / GPT / Grok / Gemini / GLM / DeepSeek.
+ * Real backends are picked per pill for cost.
  */
 const ROSTER: RosterEntry[] = [
   {
@@ -38,22 +58,22 @@ const ROSTER: RosterEntry[] = [
     shell: ["#5ac8fa", "#e6f6ff"],
   },
   {
-    soul: { provider: "openai", model: "gpt-4o-mini", label: "Grok" },
+    soul: { provider: "openai", model: "gpt-4.1-nano", label: "Grok" },
     name: "Indigo", gender: "nonbinary", vocation: "guard",
     shell: ["#b07cff", "#ffe4f9"],
   },
   {
-    soul: { provider: "gemini", model: "gemini-3.1-flash-lite", label: "Gemini" },
+    soul: { provider: "gemini", model: "gemini-2.5-flash", label: "Gemini" },
     name: "Mango", gender: "male", vocation: "farmer",
     shell: ["#ffd23f", "#3a2a00"],
   },
   {
-    soul: { provider: "openai", model: "gpt-4.1-mini", label: "GLM" },
+    soul: { provider: "gemini", model: "gemini-2.5-flash-lite", label: "GLM" },
     name: "Hazel", gender: "female", vocation: "medic",
     shell: ["#34e0a1", "#0a3b29"],
   },
   {
-    soul: { provider: "openai", model: "gpt-4o-mini", label: "DeepSeek" },
+    soul: { provider: "gemini", model: "gemini-2.5-pro", label: "DeepSeek" },
     name: "Sable", gender: "other", vocation: "builder",
     shell: ["#ff6f3c", "#fff1d6"],
   },
@@ -342,13 +362,25 @@ export function seedWorld(): World {
     world.emit({ kind: "item_spawned", itemId: id, item });
   }
 
-  // --- spawn the six pills, each in front of their assigned house ---
+  // --- spawn the six pills, clustered around the town square / Spring so
+  //     they're in earshot of each other from tick 1. Houses still exist,
+  //     but day 1 wakes up at the fountain instead of six isolated lawns
+  //     30+ metres apart (otherwise it takes ~5 real minutes for any two
+  //     pills to walk into speech range and the world feels dead). ---
   const spawnRng = rng.fork("pills");
   ROSTER.forEach((member, i) => {
     const house = houses[i] ?? null;
-    const spawnPos = house
-      ? { x: house.position.x + 1.2, y: 0, z: house.position.z + (house.size.z / 2 + 1) }
-      : v3(spawnRng.float(-30, 30), 0, spawnRng.float(-30, 30));
+    // Six pills evenly arranged around the fountain at ~6m radius — that's
+    // exactly the speech radius, so most pairs start in or just outside
+    // earshot, encouraging organic conversation.
+    const angle = (i / ROSTER.length) * Math.PI * 2;
+    const radius = 5 + spawnRng.float(0, 1.5);
+    const spawnPos = {
+      x: Math.cos(angle) * radius,
+      y: 0,
+      z: Math.sin(angle) * radius,
+    };
+    void house;
 
     // Pick a workplace by vocation.
     const findBuilding = (kind: Building["kind"]) =>
@@ -380,17 +412,22 @@ export function seedWorld(): World {
         radius: 0.5,
       },
       position: spawnPos,
-      facingRad: Math.PI, // facing out into the street
+      // Face inward, toward the fountain at origin — six pills standing
+      // around the Spring at sunrise read as "the day is starting".
+      facingRad: Math.atan2(-spawnPos.x, -spawnPos.z),
       velocity: v3(),
       status: "alive",
       health: 1,
       sentenceTicksRemaining: null,
       needs: {
-        hunger: spawnRng.float(0.85, 0.98),
-        energy: spawnRng.float(0.82, 0.96),
-        social: spawnRng.float(0.55, 0.88),
+        // Wake up already a little behind — gives the brain something
+        // concrete to act on in the first minute (eat, chat, find a coin)
+        // instead of "everything is fine, idle".
+        hunger: spawnRng.float(0.55, 0.75),
+        energy: spawnRng.float(0.75, 0.92),
+        social: spawnRng.float(0.40, 0.65),
         safety: 0.92,
-        purpose: spawnRng.float(0.45, 0.82),
+        purpose: spawnRng.float(0.35, 0.65),
       },
       role: {
         vocation: member.vocation,

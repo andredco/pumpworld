@@ -1,96 +1,107 @@
 # Railway (sim + web)
 
-The simulator listens on **one port**: Railway’s **`PORT`**. HTTP routes (`/snapshot`, `/healthz`, …) and **WebSocket** upgrades share it (same URL as API, `wss://…`).
+Two services from this repo: **`@pumpworld/sim`** and **`@pumpworld/web`**.
 
-Use **two Railway services** from this repo: **`@pumpworld/sim`** and **`@pumpworld/web`**.
+The sim listens on **one port** (Railway's `PORT`). HTTP routes (`/snapshot`, `/healthz`, `/runs`, …) and **WebSocket** upgrades share the same listener — the public viewer talks to the sim host with `https://…` and `wss://…` against the same origin.
 
-If **`www`** shows **`{"error":"unknown route"}`**, traffic is hitting **sim** (wrong Dockerfile on web). Fix **§2** first.
+If `www` shows `{"error":"unknown route"}`, traffic is hitting **sim** (wrong Dockerfile on web). Fix §2 first.
 
 ---
 
 ## 1. GitHub
 
-Push this repo to GitHub, then in Railway: **New Project → Deploy from GitHub → pick the repo**.
+Push this repo to GitHub, then Railway → **New Project → Deploy from GitHub**.
 
 ---
 
-## 2. One-time wiring (do this once per service)
+## 2. One-time wiring (per service)
 
-Railway only auto-loads config from a root **`railway.toml`** / **`railway.json`**. Two Dockerfiles need **two config files**, each **linked** to its service.
+Two Dockerfiles, two config files, each linked to its service.
 
-Repo files:
+| File | Service | Builder |
+|------|---------|---------|
+| `railway.sim.json` | `@pumpworld/sim` | `Dockerfile` (sim) |
+| `railway.web.json` | `@pumpworld/web` | `Dockerfile.web` (viewer) |
 
-| File | Service |
-|------|---------|
-| **`railway.sim.json`** | **`@pumpworld/sim`** |
-| **`railway.web.json`** | **`@pumpworld/web`** |
+For each service:
 
-### Steps (repeat for **sim** and **web**)
+1. Service → **Settings** → **Root Directory** = empty (repo root).
+2. **Config-as-code** → **Config file path**:
+   - `/railway.sim.json` for **sim**
+   - `/railway.web.json` for **web**
+3. **Custom Build / Start command** = empty everywhere (image `CMD` runs the process).
+4. Remove any stale inline `railway.toml` that older dashboards may have copied in.
 
-1. Open the service → **Settings**.
-2. **Root Directory** → **empty** (repo root). **`Dockerfile.web` requires root context** (`package.json`, `packages/`, `apps/web/`).
-3. **Config-as-code** → set **Config file path** (wording varies) to:
-   - **`/railway.sim.json`** on **sim**
-   - **`/railway.web.json`** on **web**  
-   Use a **leading slash**, path from repo root.
-4. Remove **any inline / pasted `railway.toml`** in Railway (old UI copies can override Git and keep showing “set in railway.toml”).
-5. **Deploy** tab: **Custom Start Command** → **empty** everywhere (image **`CMD`** runs the process).
+Health checks:
 
-After linking **`railway.sim.json`** / **`railway.web.json`**, Railway merges **build + deploy** from that file.
+- sim → `/healthz`
+- web → `/healthz` (a static file in `apps/web/public/healthz`).
 
-| File | Builder | Notes |
-|------|---------|--------|
-| **`railway.sim.json`** | **Dockerfile** (`Dockerfile`) | Healthcheck **`/healthz`** |
-| **`railway.web.json`** | **Dockerfile** (`Dockerfile.web`) | **`serve`** on **`PORT`**; probe **`/healthz`** (see **`apps/web/public/healthz`**) |
+If web logs still show `vite` + `localhost:5173`, config-as-code isn't being applied; recheck step 2.
 
-Clear **Custom Build Command** / **Custom Start Command** on **both** services so Docker **`CMD`** runs.
-
-### If **`@pumpworld/web`** deploy logs still show **`vite`** + **`localhost:5173`**
-
-Config-as-code isn’t applied (wrong **Config file path**, or dashboard overrides). Fix **§2** and confirm the deployment shows settings from **`railway.web.json`** (Docker **`Dockerfile.web`**).
+---
 
 ## 3. Sim image
 
-Build logs must include **`=== pumpworld Dockerfile ===`**. Image uses **`npm install`** and **`/tmp`** npm cache to reduce **`EBUSY`** on **`node_modules/.cache`**.
+Build logs include `=== pumpworld Dockerfile ===`. Image uses `npm install` and `/tmp` npm cache (avoids `EBUSY` on `node_modules/.cache`).
 
 ### Persistent world data
 
-1. **Volumes** → mount **`/data`**
+1. Volumes → mount **`/data`**
 2. **`PUMPWORLD_DATA_DIR=/data`**
 
-### Env (default roster)
+The world hot-resumes from the latest snapshot on restart. If every pill in the latest snapshot is dead/exiled, the sim refuses to resume the graveyard and re-seeds from genesis — set `PUMPWORLD_FRESH_START=1` once if you want to force-reseed regardless.
+
+### Required env (current roster)
+
+The roster in `apps/sim/src/world/seed.ts` deliberately splits the cast across **OpenAI** and **Gemini** to keep inference costs minimal:
+
+- 3 souls on OpenAI (`OPENAI_API_KEY`) using cheap mini/nano GPT models.
+- 3 souls on Gemini Developer API (`GEMINI_API_KEY`) using the free-tier 2.5 Pro / Flash / Flash-Lite models.
+
+The public personas (Claude, GPT, Grok, Gemini, GLM, DeepSeek) are display labels and stay constant regardless of which provider actually generates the tokens.
 
 | Variable | Purpose |
 |----------|---------|
-| `OPENAI_API_KEY` | Five pills (`openai` in roster) |
-| `GEMINI_API_KEY` | Mango (`gemini`); or `GOOGLE_AI_API_KEY`, etc. |
-| `PUMPWORLD_DATA_DIR` | e.g. `/data` with a volume |
+| `OPENAI_API_KEY` | Pluto, Coral, Indigo (gpt-4o-mini / gpt-4.1-mini / gpt-4.1-nano) |
+| `GEMINI_API_KEY` | Mango, Hazel, Sable (gemini-2.5-flash / -flash-lite / -pro) |
+| `PUMPWORLD_DATA_DIR` | Set to `/data` when using a Volume |
+| `PUMPWORLD_TOKEN_MINT` | Solana mint for DexScreener; without it the sim runs with a neutral token feed (no live mood) |
 
-Optional: `PUMPWORLD_TOKEN_MINT`; on Railway without mint, sim uses a **neutral token feed**. Other keys if you change roster — see `apps/sim/src/world/seed.ts`.
+If you change the roster to a different provider mix (e.g. all OpenRouter), add the matching key (`OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, etc.) — see `apps/sim/src/world/seed.ts`.
 
 ---
 
 ## 4. Web viewer
 
-Link **`railway.web.json`** (§2).
+Link `railway.web.json` per §2.
 
-**Build-time** vars (Vite bakes URLs at build):
+The viewer is built **once** with no URLs baked in. The container reads two env vars at start and writes them into `dist/runtime-config.js`, which the bundle reads via `window.__PUMPWORLD_RUNTIME__`. The same image works against any sim host without rebuilding.
+
+### Runtime env (set on the **web** service)
 
 | Variable | Example |
 |----------|---------|
 | `PUMPWORLD_HTTP_URL` | `https://YOUR_SIM.up.railway.app` |
-| `PUMPWORLD_WS_URL` | `wss://YOUR_SIM.up.railway.app` |
+| `PUMPWORLD_WS_URL`   | `wss://YOUR_SIM.up.railway.app` |
+| `PORT` | Set by Railway automatically |
 
-Point both at the **sim** public host. Redeploy **web** after changing them.
+If you leave both `PUMPWORLD_*_URL` blank, the bundle falls back to the page's own origin (sane for single-service or reverse-proxied setups). It will never hard-code `localhost` in production — that bug shipped briefly in v0.7 and is fixed in v0.8.
+
+Restart the web service after changing env vars; you do **not** need a new build.
 
 ---
 
 ## 5. Smoke tests
 
 ```bash
+# sim
 curl -sS https://YOUR_SIM.up.railway.app/healthz
+curl -sS https://YOUR_SIM.up.railway.app/snapshot | jq '.pills | length'
+
+# web (should serve HTML, not {"error":"unknown route"})
+curl -sS -o /dev/null -w "%{http_code}\n" https://YOUR_WEB.up.railway.app/
+curl -sS https://YOUR_WEB.up.railway.app/runtime-config.js
 ```
 
-Custom domain for **web** should return **HTML** at **`/`**, not **`{"error":"unknown route"}`**.
-
-Local dev unchanged: **8787** + **8788** when **`PORT`** is unset.
+Local dev unchanged: 8787 (HTTP+WS shared) when `PORT` is unset, viewer at 5173.
