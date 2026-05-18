@@ -98,21 +98,18 @@ export function buildPerception(world: World, pill: Pill, memory: Memory): strin
   if (inEarshot.length > 0) {
     const slice = inEarshot.slice(0, 8).map(n => `${n.name} (id:${n.id})`).join(", ");
     lines.push(
-      `Others can hear you within ~${SPEECH_RADIUS_M}m: ${slice}${inEarshot.length > 8 ? ` ... +${inEarshot.length - 8} more` : ""}.`,
+      `Within earshot: ${slice}${inEarshot.length > 8 ? ` ... +${inEarshot.length - 8} more` : ""}.`,
     );
     lines.push(
-      `You can be heard here: use **speak** for anything aloud (thought stays private).`,
-    );
-    lines.push(
-      `Do not plan dialogue only in your head this tick if you mean to interact — **speak** carries your voice for others.`,
+      `If you have words for them, **speak** carries your voice. If you don't, you don't have to. Strangers ignore each other in real towns.`,
     );
   } else if (neighbours.length > 0) {
-    lines.push(`Nobody within ${SPEECH_RADIUS_M}m yet; they cannot hear you until you move closer (move_to or follow).`);
+    lines.push(`Nobody within ${SPEECH_RADIUS_M}m. You're effectively alone right now.`);
   } else {
-    lines.push(`No other pills in sight. You may still speak aloud (to:null) or head toward the square or Spring where pills gather.`);
+    lines.push(`No other pills in sight. You are alone.`);
   }
-  if (pill.needs.social < 0.55 && neighbours.length > 0) {
-    lines.push(`Social need is ${pill.needs.social.toFixed(2)} (running low); conversation restores it.`);
+  if (pill.needs.social < 0.4 && neighbours.length > 0) {
+    lines.push(`Social need is ${pill.needs.social.toFixed(2)} (low) — company would help, if you want it.`);
   }
 
   lines.push(`\n## Items in sight (${visibleItems.length})`);

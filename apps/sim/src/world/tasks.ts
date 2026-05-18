@@ -36,18 +36,16 @@ function pickTask(world: World, pill: Pill): string {
     // night → sleep at home
     return pill.homeBuildingId ? `go home and sleep` : `find a place to sleep`;
   }
-  if (hour < 9) {
-    // The first morning hour is for living, not punching in. Most pills
-    // spawn near the Spring at sunrise — let them actually meet each other,
-    // pick up shards, eat breakfast, gossip. Vocation kicks in at 09:00.
-    return `linger at the Spring, breakfast, talk to whoever is up`;
+  if (hour < 8) {
+    return `wake up, eat breakfast, plan your day`;
   }
   if (hour >= 18 && hour < 22) {
     // evening: socialise at the tavern or walk home
     return pill.role.vocation === "guard" ? `do an evening patrol` : `head to the tavern for a drink`;
   }
 
-  // Work hours (9..18) — task depends on vocation
+  // Work hours (8..18) — task depends on vocation, but the prompt is clear
+  // this is a *suggestion*, not a command. Pills frequently skip.
   switch (pill.role.vocation) {
     case "judge":    return `wait at the courthouse for cases`;
     case "merchant": return `mind the shop and look for customers`;

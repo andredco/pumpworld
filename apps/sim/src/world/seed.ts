@@ -362,25 +362,24 @@ export function seedWorld(): World {
     world.emit({ kind: "item_spawned", itemId: id, item });
   }
 
-  // --- spawn the six pills, clustered around the town square / Spring so
-  //     they're in earshot of each other from tick 1. Houses still exist,
-  //     but day 1 wakes up at the fountain instead of six isolated lawns
-  //     30+ metres apart (otherwise it takes ~5 real minutes for any two
-  //     pills to walk into speech range and the world feels dead). ---
+  // --- spawn the six pills, each at their own house ---
+  //     Each pill wakes up at home, in private, the way a real day starts.
+  //     They have to choose to come together — community is what they
+  //     build, not what we hand them at sunrise. (An earlier version
+  //     spawned all six in a 6m ring around the Spring; that produced a
+  //     permanent town-hall meeting because everyone was always in
+  //     earshot. The whole point is that they're free to do whatever,
+  //     including not talking to anyone all day if they don't want to.)
   const spawnRng = rng.fork("pills");
   ROSTER.forEach((member, i) => {
     const house = houses[i] ?? null;
-    // Six pills evenly arranged around the fountain at ~6m radius — that's
-    // exactly the speech radius, so most pairs start in or just outside
-    // earshot, encouraging organic conversation.
-    const angle = (i / ROSTER.length) * Math.PI * 2;
-    const radius = 5 + spawnRng.float(0, 1.5);
-    const spawnPos = {
-      x: Math.cos(angle) * radius,
-      y: 0,
-      z: Math.sin(angle) * radius,
-    };
-    void house;
+    const spawnPos = house
+      ? {
+          x: house.position.x + spawnRng.float(-1.5, 1.5),
+          y: 0,
+          z: house.position.z + (house.size.z / 2 + 1.5) + spawnRng.float(-0.5, 0.5),
+        }
+      : v3(spawnRng.float(-30, 30), 0, spawnRng.float(-30, 30));
 
     // Pick a workplace by vocation.
     const findBuilding = (kind: Building["kind"]) =>
@@ -412,22 +411,21 @@ export function seedWorld(): World {
         radius: 0.5,
       },
       position: spawnPos,
-      // Face inward, toward the fountain at origin — six pills standing
-      // around the Spring at sunrise read as "the day is starting".
-      facingRad: Math.atan2(-spawnPos.x, -spawnPos.z),
+      // Face out from the front of the house, into the street.
+      facingRad: Math.atan2(0, 1),
       velocity: v3(),
       status: "alive",
       health: 1,
       sentenceTicksRemaining: null,
       needs: {
-        // Wake up already a little behind — gives the brain something
-        // concrete to act on in the first minute (eat, chat, find a coin)
-        // instead of "everything is fine, idle".
-        hunger: spawnRng.float(0.55, 0.75),
-        energy: spawnRng.float(0.75, 0.92),
-        social: spawnRng.float(0.40, 0.65),
+        // Wake up rested but not perfect — like a real morning. Lets the
+        // brain choose its own first move (breakfast, work, walk, write,
+        // ignore everyone) without being forced into any of them.
+        hunger: spawnRng.float(0.70, 0.88),
+        energy: spawnRng.float(0.80, 0.95),
+        social: spawnRng.float(0.55, 0.85),
         safety: 0.92,
-        purpose: spawnRng.float(0.35, 0.65),
+        purpose: spawnRng.float(0.45, 0.75),
       },
       role: {
         vocation: member.vocation,
