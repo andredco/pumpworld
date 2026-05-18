@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "start": "vite preview",
+    "start": "serve -s dist --listen tcp://0.0.0.0:${PORT:-4173}",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit"
   },
@@ -20,6 +20,7 @@
     "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.0",
     "remark-math": "^6.0.0",
+    "serve": "^14.2.4",
     "three": "^0.169.0",
     "zustand": "^5.0.0"
   },
