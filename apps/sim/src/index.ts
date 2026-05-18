@@ -6,7 +6,7 @@ import { writeSnapshot } from "./persistence/snapshot.js";
 import { createHttpServer } from "./server/httpServer.js";
 import { WsBroadcaster } from "./server/wsServer.js";
 import { runTick } from "./world/tick.js";
-import { seedWorld, syncPersonalitiesWithWorld } from "./world/seed.js";
+import { seedWorld, syncPersonalitiesWithWorld, migrateSoulsFromRoster } from "./world/seed.js";
 import type { TokenFeed } from "./token/TokenFeed.js";
 import { DexScreenerFeed } from "./token/DexScreenerFeed.js";
 import { OffTokenFeed } from "./token/OffTokenFeed.js";
@@ -48,6 +48,11 @@ async function main() {
   const world = resume.world;
   // Align side-channel personalities with pill ids (critical after snapshot resume).
   syncPersonalitiesWithWorld(world);
+  // Re-bind each pill's soul (provider/model) to the current ROSTER. This
+  // makes roster swaps apply on the next deploy without forcing a fresh
+  // start: the pills keep their names, homes, memories, relationships,
+  // and only the brain-routing changes. Idempotent on fresh genesis.
+  migrateSoulsFromRoster(world);
   const runDir = resume.runDir ?? newRunDir(config.dataDir, world.meta.seed);
   const log = new EventLog(join(runDir, "events.jsonl"));
   // Only emit genesis events if this is a fresh start.

@@ -25,26 +25,20 @@ interface RosterEntry {
  * The six-pill cast.
  *
  * Public personas (Claude / GPT / Grok / Gemini / GLM / DeepSeek) are
- * **fiction the viewers see**. Under the hood we route through the cheapest
- * available API endpoints that keep the experiment running 24/7 without
- * burning a hole in the OpenRouter / Anthropic / xAI bills:
+ * fiction the viewers see. All six route to **OpenAI** under the hood
+ * because Gemini's free tier rate-limited hard enough that the three
+ * Gemini-driven pills stalled in production (their pills sat at home
+ * silent for minutes between thinks). One vendor, six brain ids, max
+ * speed at small bills.
  *
- *   - 3 souls on **OpenAI Chat Completions** (`OPENAI_API_KEY`) — the cheap
- *     mini / nano tier of the GPT family.
- *   - 3 souls on **Gemini Developer API** (`GEMINI_API_KEY`) — the free
- *     tier (gemini-2.5-pro / -flash / -flash-lite). Each model has its own
- *     RPM bucket on the free tier, so spreading across all three models
- *     buys us roughly 3× the per-pill think budget vs. routing all three
- *     pills through one Gemini slug.
+ * On distinctness: OpenAI publishes ~3 genuinely-distinct cheap text
+ * models. The other three slots are filled with **dated snapshots** of
+ * those models plus the older 3.5 family for actual stylistic variety.
+ * Two pills with the same slug still diverge fast because each gets a
+ * unique persona, secret, and seed in the prompt.
  *
- * The constitution (AGENTS.md) says pills are "routed through OpenRouter".
- * That's the prose framing for viewers; operationally we choose the
- * cheapest provider per soul. If you want to flip the entire cast back to
- * OpenRouter (one key, six minds), there's an OpenRouter provider already
- * wired up — just edit the `provider` field below.
- *
- * Cast labels stay Claude / GPT / Grok / Gemini / GLM / DeepSeek.
- * Real backends are picked per pill for cost.
+ * Cost ballpark, all six together at the default 2s tick / 3-tick think
+ * cadence: under $2/hr. Most calls are gpt-4o-mini class.
  */
 const ROSTER: RosterEntry[] = [
   {
@@ -63,17 +57,17 @@ const ROSTER: RosterEntry[] = [
     shell: ["#b07cff", "#ffe4f9"],
   },
   {
-    soul: { provider: "gemini", model: "gemini-2.5-flash", label: "Gemini" },
+    soul: { provider: "openai", model: "gpt-4o-mini-2024-07-18", label: "Gemini" },
     name: "Mango", gender: "male", vocation: "farmer",
     shell: ["#ffd23f", "#3a2a00"],
   },
   {
-    soul: { provider: "gemini", model: "gemini-2.5-flash-lite", label: "GLM" },
+    soul: { provider: "openai", model: "gpt-3.5-turbo", label: "GLM" },
     name: "Hazel", gender: "female", vocation: "medic",
     shell: ["#34e0a1", "#0a3b29"],
   },
   {
-    soul: { provider: "gemini", model: "gemini-2.5-pro", label: "DeepSeek" },
+    soul: { provider: "openai", model: "gpt-3.5-turbo-0125", label: "DeepSeek" },
     name: "Sable", gender: "other", vocation: "builder",
     shell: ["#ff6f3c", "#fff1d6"],
   },
@@ -139,6 +133,71 @@ export function syncPersonalitiesWithWorld(world: World): void {
         randomPersonality(rngBase.fork(`personality:${pill.id}`), pill.soul.label, pill.role.vocation),
       );
     }
+  }
+}
+
+/**
+ * After a snapshot resume, the persisted Pill objects carry the souls that
+ * were live at the time the snapshot was written. If the operator has since
+ * changed the ROSTER (different model behind a label, swap from gemini to
+ * openai, etc.), the resumed pill would silently keep its old brain. This
+ * re-binds each pill to the soul currently declared in ROSTER, matched by
+ * the **public label** (Claude / GPT / Grok / Gemini / GLM / DeepSeek).
+ *
+ * Match priority:
+ *   1. Label match — preserves "Claude is Pluto" across roster swaps.
+ *   2. Vocation match — fallback if a label was renamed.
+ *   3. Roster-position match — last-resort by index.
+ *
+ * Personality, name, position, inventory, relationships, and history are
+ * untouched. Only `pill.soul` (provider/model/label) gets refreshed.
+ */
+export function migrateSoulsFromRoster(world: World): void {
+  const pills = [...world.pills.values()];
+  if (pills.length === 0) return;
+
+  const usedRoster = new Set<number>();
+  const usedPills = new Set<string>();
+
+  // Pass 1: label match.
+  for (let i = 0; i < pills.length; i++) {
+    const pill = pills[i]!;
+    const idx = ROSTER.findIndex((r, j) =>
+      !usedRoster.has(j) && r.soul.label === pill.soul.label,
+    );
+    if (idx >= 0) {
+      const next = ROSTER[idx]!.soul;
+      if (
+        pill.soul.provider !== next.provider
+        || pill.soul.model !== next.model
+        || pill.soul.label !== next.label
+      ) {
+        pill.soul = { ...next };
+      }
+      usedRoster.add(idx);
+      usedPills.add(pill.id);
+    }
+  }
+  // Pass 2: vocation fallback for any pill not yet matched.
+  for (const pill of pills) {
+    if (usedPills.has(pill.id)) continue;
+    const idx = ROSTER.findIndex((r, j) =>
+      !usedRoster.has(j) && r.vocation === pill.role.vocation,
+    );
+    if (idx >= 0) {
+      pill.soul = { ...ROSTER[idx]!.soul };
+      usedRoster.add(idx);
+      usedPills.add(pill.id);
+    }
+  }
+  // Pass 3: positional fallback.
+  for (let i = 0; i < pills.length && i < ROSTER.length; i++) {
+    const pill = pills[i]!;
+    if (usedPills.has(pill.id)) continue;
+    if (usedRoster.has(i)) continue;
+    pill.soul = { ...ROSTER[i]!.soul };
+    usedRoster.add(i);
+    usedPills.add(pill.id);
   }
 }
 
