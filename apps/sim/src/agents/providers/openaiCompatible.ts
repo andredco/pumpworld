@@ -35,11 +35,17 @@ export class OpenAICompatibleProvider implements BrainProvider {
       { role: "system", content: req.systemPrompt },
       { role: "user", content: `${req.perception}\n\n${req.question}` },
     ];
+    // Per-model max-completion-tokens caps. Sending more than the model
+    // accepts is an immediate HTTP 400 — gpt-3.5-turbo and the older 4o-mini
+    // snapshots all top out at 4096. The brain's JSON output is small (a
+    // thought + one action), so 1024 is plenty even for a long blog_post
+    // body which we already truncate at write-time.
+    const maxTokens = clampMaxTokensForModel(this.model, req.maxTokens);
     const body = {
       model: this.model,
       messages,
       temperature: brainSamplingTemperature(),
-      max_tokens: req.maxTokens,
+      max_tokens: maxTokens,
       response_format: { type: "json_object" } as const,
       ...(req.seed != null ? { seed: req.seed } : {}),
     };
@@ -56,6 +62,27 @@ export class OpenAICompatibleProvider implements BrainProvider {
     const raw = json.choices?.[0]?.message?.content ?? "";
     return parseDecision(raw, json.usage?.prompt_tokens, json.usage?.completion_tokens);
   }
+}
+
+/**
+ * Per-model completion-token caps. Sending more than the model documents is
+ * an immediate HTTP 400 (Hazel and Sable were dying every think on
+ * gpt-3.5-turbo because the global default was 8192).
+ *
+ * Conservative numbers — the brain's JSON output is small. If a future
+ * model is added, the default 4096 still works for nearly everything.
+ */
+function clampMaxTokensForModel(model: string, requested: number): number {
+  const m = model.toLowerCase();
+  let cap = 4096; // safe default
+  if (m.includes("gpt-3.5")) cap = 4096;
+  else if (m.includes("gpt-4o-mini")) cap = 16384;
+  else if (m.includes("gpt-4.1-nano")) cap = 32768;
+  else if (m.includes("gpt-4.1-mini")) cap = 32768;
+  else if (m.includes("gpt-4.1")) cap = 32768;
+  else if (m.includes("gpt-4o")) cap = 16384;
+  else if (m.includes("gpt-4-turbo")) cap = 4096;
+  return Math.max(256, Math.min(requested, cap));
 }
 
 function parseDecision(raw: string, inTok?: number, outTok?: number): BrainResponse {

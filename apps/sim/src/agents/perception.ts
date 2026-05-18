@@ -43,6 +43,58 @@ export function buildPerception(world: World, pill: Pill, memory: Memory): strin
     hour < 22 ? "evening" : "night";
 
   const lines: string[] = [];
+
+  // -------- RIGHT NOW: a hard, obvious action signal at the top of the
+  // prompt. Two cheap models (3.5 era) frequently say "I'm hungry, I
+  // should eat" and then output `idle` because the relevant info is
+  // buried 60 lines down in the perception block. This block surfaces
+  // the most pressing need + the most relevant nearby thing in one
+  // sentence so the brain doesn't have to search.
+  const inventoryFood = pill.inventory
+    .map(e => world.items.get(e.itemId))
+    .find(it => it && it.kind === "food");
+  const groundFood = [...world.items.values()]
+    .filter(it => it.kind === "food" && it.position && !it.ownerPillId)
+    .map(it => ({ it, d: v3dist2D(it.position!, pill.position) }))
+    .sort((a, b) => a.d - b.d)[0];
+  const homeBuildingForNow = pill.homeBuildingId ? world.buildings.get(pill.homeBuildingId) : null;
+  const cues: string[] = [];
+  if (pill.needs.hunger < 0.35) {
+    if (inventoryFood) {
+      cues.push(`HUNGER ${pill.needs.hunger.toFixed(2)} — you have ${inventoryFood.name} (id:${inventoryFood.id}) in inventory. **eat it now.**`);
+    } else if (groundFood && groundFood.d <= 2) {
+      cues.push(`HUNGER ${pill.needs.hunger.toFixed(2)} — ${groundFood.it.name} is right next to you (id:${groundFood.it.id}). **pickup now.**`);
+    } else if (groundFood) {
+      cues.push(`HUNGER ${pill.needs.hunger.toFixed(2)} — ${groundFood.it.name} (id:${groundFood.it.id}) at (${groundFood.it.position!.x.toFixed(1)},${groundFood.it.position!.z.toFixed(1)}), ${groundFood.d.toFixed(1)}m away. **move_to it now**, then pickup, then eat.`);
+    } else {
+      cues.push(`HUNGER ${pill.needs.hunger.toFixed(2)} — no food in sight. Walk somewhere new (the tavern, the farms, town square) instead of standing still.`);
+    }
+  }
+  if (pill.needs.energy < 0.25 && pill.status === "alive") {
+    if (homeBuildingForNow) {
+      const d = v3dist2D(homeBuildingForNow.position, pill.position);
+      if (d <= 4) cues.push(`ENERGY ${pill.needs.energy.toFixed(2)} — you are at ${homeBuildingForNow.name}. **sleep now.**`);
+      else cues.push(`ENERGY ${pill.needs.energy.toFixed(2)} — head home (${homeBuildingForNow.name} at ${homeBuildingForNow.position.x.toFixed(1)},${homeBuildingForNow.position.z.toFixed(1)}, ${d.toFixed(1)}m) and sleep.`);
+    } else {
+      cues.push(`ENERGY ${pill.needs.energy.toFixed(2)} — find a place to sleep.`);
+    }
+  }
+  if (pill.health < 0.4) {
+    cues.push(`HEALTH ${pill.health.toFixed(2)} — low. Eat, rest, or get help.`);
+  }
+  // Standing-still nudge: if the brain has been mostly idle and nothing
+  // urgent is happening, push it to *go somewhere*. Memory length is a
+  // cheap proxy for "did anything happen recently".
+  const recentMemoryCount = memory.short.length;
+  if (cues.length === 0 && recentMemoryCount < 2 && neighbours.length === 0) {
+    cues.push(`Nothing has happened to you recently and you're alone. **Go somewhere** — the town square, a shop, the tavern, a friend's house, or just walk a direction. Standing in your front yard for hours is not a real life.`);
+  }
+  if (cues.length > 0) {
+    lines.push(`# RIGHT NOW`);
+    for (const c of cues) lines.push(`- ${c}`);
+    lines.push("");
+  }
+
   lines.push(`# YOU`);
   lines.push(`name: ${pill.name} (id: ${pill.id})  gender: ${pill.gender}  vocation: ${pill.role.vocation}`);
   lines.push(`soul (cast name): ${pill.soul.label}`);
