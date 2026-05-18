@@ -155,6 +155,44 @@ export function buildPerception(world: World, pill: Pill, memory: Memory): strin
     lines.push(
       `If you have words for them, **speak** carries your voice. If you don't, you don't have to. Strangers ignore each other in real towns.`,
     );
+
+    // Per-pill conversation cues. The point: when two pills who actually
+    // know each other (or want to) end up in earshot after walking across
+    // town, the natural human thing is to say something. The earlier
+    // "silence is fine" rule was so strong they sat together silently
+    // even when they had history. This block gives the brain a *specific*
+    // reason to speak when one exists, without nagging on every tick.
+    const memSpoke = (otherId: string): boolean => {
+      // Did either of us speak in the recent short memory? Cheap proxy
+      // for "are we mid-conversation already".
+      for (const m of memory.short) {
+        if (m.text.includes(otherId)) return true;
+      }
+      return false;
+    };
+    const cues: string[] = [];
+    for (const n of inEarshot.slice(0, 4)) {
+      const rel = pill.relationships.find(r => r.with === n.id);
+      const justArrived = !memSpoke(n.id);
+      if (rel) {
+        if (rel.tag === "lover" || rel.tag === "spouse" || rel.tag === "best_friend") {
+          if (justArrived) cues.push(`${n.name} (${rel.tag}) is right next to you and you haven't said anything to them yet — say something.`);
+        } else if (rel.tag === "friend" && justArrived) {
+          cues.push(`${n.name} is your friend and within earshot. A greeting or a real question would land naturally.`);
+        } else if (rel.tag === "enemy" || rel.tag === "rival") {
+          if (justArrived) cues.push(`${n.name} is your ${rel.tag} and is within earshot. Words, threats, or pointed silence — all read as a choice.`);
+        } else if (rel.tag === "ex" && justArrived) {
+          cues.push(`${n.name} is your ex and is within earshot. Loaded.`);
+        }
+      } else if (justArrived && pill.needs.social < 0.6) {
+        // Stranger but you're under-socialised — light nudge, not an order.
+        cues.push(`${n.name} (${n.soul.label}/${n.role.vocation}) is in earshot. You have not met. Introduce yourself if you feel like it.`);
+      }
+    }
+    if (cues.length > 0) {
+      lines.push("Cues:");
+      for (const c of cues) lines.push(`  - ${c}`);
+    }
   } else if (neighbours.length > 0) {
     lines.push(`Nobody within ${SPEECH_RADIUS_M}m. You're effectively alone right now.`);
   } else {
