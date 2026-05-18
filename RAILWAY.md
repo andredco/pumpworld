@@ -36,26 +36,18 @@ Repo files:
 4. Remove **any inline / pasted `railway.toml`** in Railway (old UI copies can override Git and keep showing “set in railway.toml”).
 5. **Deploy** tab: **Custom Start Command** → **empty** everywhere (image **`CMD`** runs the process).
 
-After linking **`railway.sim.json`** / **`railway.web.json`**, Railway merges **build + deploy** from that file (config overrides auto-detected Vite **`dev`** for web).
+After linking **`railway.sim.json`** / **`railway.web.json`**, Railway merges **build + deploy** from that file.
 
 | File | Builder | Notes |
 |------|---------|--------|
-| **`railway.sim.json`** | **Dockerfile** (`Dockerfile`) | **`startCommand`**: image **`CMD`** |
-| **`railway.web.json`** | **Railpack** | Explicit **`npm ci --include=dev`** → **`build`** → **`npm run start -w @pumpworld/web`** (**`vite preview`** on **`PORT`**) |
+| **`railway.sim.json`** | **Dockerfile** (`Dockerfile`) | Healthcheck **`/healthz`** |
+| **`railway.web.json`** | **Dockerfile** (`Dockerfile.web`) | **`serve`** on **`PORT`**; probe **`/healthz`** (see **`apps/web/public/healthz`**) |
 
-5. **Deploy** tab: **Custom Start Command** → **empty** on **both** (config-as-code supplies commands). Clear any **`npm run dev`** overrides left over from the template.
-
-### Optional: Docker image for web instead
-
-Use **`Dockerfile.web`** by replacing **`railway.web.json`** **`build`** section with **`builder: DOCKERFILE`**, **`dockerfilePath: Dockerfile.web`**, **`buildCommand: null`**, **`deploy.startCommand: null`** — or keep the committed **`railway.web.json`** Railpack flow above.
-
-### Fallback (sim Dockerfile env var)
-
-On **`@pumpworld/web`** only: **`RAILWAY_DOCKERFILE_PATH`** = **`Dockerfile.web`** only helps **Docker** builds; it does not fix Railpack **`dev`** by itself.
+Clear **Custom Build Command** / **Custom Start Command** on **both** services so Docker **`CMD`** runs.
 
 ### If **`@pumpworld/web`** deploy logs still show **`vite`** + **`localhost:5173`**
 
-The service is **not** loading **`/railway.web.json`** (wrong config path, inline **`railway.toml`** in the dashboard, or dashboard **Custom Start Command** still set to **`dev`**). Fix **§2**, redeploy, and confirm the deployment details page shows settings sourced from **`railway.web.json`**.
+Config-as-code isn’t applied (wrong **Config file path**, or dashboard overrides). Fix **§2** and confirm the deployment shows settings from **`railway.web.json`** (Docker **`Dockerfile.web`**).
 
 ## 3. Sim image
 
