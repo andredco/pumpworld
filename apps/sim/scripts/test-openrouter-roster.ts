@@ -1,5 +1,5 @@
 /**
- * Verifies each Pill World OpenRouter slug responds on the Chat Completions API.
+ * Verifies each OpenRouter model slug in the Pill Experiment roster on the Chat Completions API.
  * Run from repo root: npm run test:models -w @pumpworld/sim
  *
  * Loads .env the same way as the sim (repo root .env).

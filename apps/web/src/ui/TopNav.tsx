@@ -17,14 +17,14 @@ export function TopNav({ active, onChange, onAbout, onReplays }: Props) {
   const alive = [...pills.values()].filter(p => p.status !== "dead" && p.status !== "exiled").length;
 
   const tab = (id: NavTab, label: string, badge?: number, pulsing?: boolean): React.CSSProperties => ({
-    padding: "8px 16px",
-    background: active === id ? "rgba(255,255,255,0.10)" : "transparent",
+    padding: "8px 14px",
+    background: active === id ? "var(--pw-accent-muted)" : "transparent",
     border: "none",
     borderRadius: 99,
     color: active === id ? "var(--pw-text)" : "var(--pw-text-dim)",
     fontSize: 12,
     fontWeight: 600,
-    letterSpacing: 0.4,
+    letterSpacing: 0.02,
     cursor: "pointer",
     fontFamily: "inherit",
     transition: "all 140ms ease",
@@ -34,20 +34,12 @@ export function TopNav({ active, onChange, onAbout, onReplays }: Props) {
   void pulse; // keep render in sync but not used directly here
 
   return (
-    <div style={{
+    <div className="pe-glass-bar" style={{
       position: "absolute",
       top: 16, left: "50%",
       transform: "translateX(-50%)",
       padding: 4,
-      background: "rgba(7,9,12,0.84)",
-      border: "1px solid var(--pw-border)",
-      borderRadius: 99,
-      backdropFilter: "blur(16px)",
-      WebkitBackdropFilter: "blur(16px)",
-      display: "flex",
-      alignItems: "center",
       gap: 2,
-      boxShadow: "0 14px 36px rgba(0,0,0,0.5)",
       zIndex: 50,
     }}>
       <button style={tab("live", "Live")} onClick={() => onChange("live")}>
@@ -67,8 +59,8 @@ export function TopNav({ active, onChange, onAbout, onReplays }: Props) {
         href={X_URL}
         target="_blank"
         rel="noopener noreferrer"
-        title="Follow @thepillsworld on X"
-        aria-label="Follow @thepillsworld on X"
+        title="Follow @thepillexperiment on X"
+        aria-label="Follow @thepillexperiment on X"
         style={{
           display: "inline-flex",
           alignItems: "center",

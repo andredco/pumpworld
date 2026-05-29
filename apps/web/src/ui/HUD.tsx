@@ -58,21 +58,22 @@ export function HUD() {
       <div style={{
         display: "flex", alignItems: "center", gap: 14,
         padding: "8px 16px",
-        background: "rgba(7,9,12,0.84)",
+        background: "var(--pw-card)",
         border: "1px solid var(--pw-border)",
-        borderRadius: 99,
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
+        borderRadius: "var(--pw-radius-full)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
         color: "var(--pw-text)",
         fontSize: 11,
         whiteSpace: "nowrap",
-        boxShadow: "0 12px 32px rgba(0,0,0,0.4)",
+        boxShadow: "var(--pw-shadow-sm)",
       }}>
         <span style={{
           padding: "2px 8px", fontSize: 9, fontWeight: 800, letterSpacing: 1.4,
           borderRadius: 99,
-          background: connected ? "rgba(124,212,162,0.16)" : "rgba(244,114,114,0.16)",
+          background: connected ? "var(--pw-accent-muted)" : "rgba(248, 113, 113, 0.12)",
           color: connected ? "var(--pw-good)" : "var(--pw-bad)",
+          border: `1px solid ${connected ? "rgba(74, 222, 128, 0.25)" : "rgba(248, 113, 113, 0.25)"}`,
         }}>
           {connected ? "● LIVE" : "OFFLINE"}
         </span>

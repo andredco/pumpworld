@@ -4,7 +4,7 @@
  * One source of truth — every "follow us" affordance imports from here so
  * a future handle change is one edit, not a grep across the viewer.
  */
-export const X_HANDLE = "thepillsworld";
+export const X_HANDLE = "thepillexperiment";
 export const X_URL = `https://x.com/${X_HANDLE}`;
 
 /**

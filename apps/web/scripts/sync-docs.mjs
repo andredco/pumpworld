@@ -50,7 +50,7 @@ const repoRoot = findRepoRoot(pkgRoot);
 
 /** Each entry: [absolute source path or null, target filename]. */
 const targets = [
-  [repoRoot ? path.join(repoRoot, "docs", "PILL_WORLD.md") : null, "PILL_WORLD.md"],
+  [repoRoot ? path.join(repoRoot, "docs", "PILL_EXPERIMENT.md") : null, "PILL_EXPERIMENT.md"],
   [repoRoot ? path.join(repoRoot, "docs", "ARCHITECTURE.md") : null, "ARCHITECTURE.md"],
   [repoRoot ? path.join(repoRoot, "AGENTS.md") : null, "AGENTS.md"],
 ];

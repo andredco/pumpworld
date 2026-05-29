@@ -2,7 +2,7 @@
   "name": "pumpworld",
   "private": true,
   "version": "0.1.0",
-  "description": "Pumpworld — a persistent 3D society of AI-driven pills, streamed live to viewers.",
+  "description": "The Pill Experiment — a persistent 3D society of AI-driven pills, streamed live to viewers.",
   "workspaces": [
     "packages/*",
     "apps/*"

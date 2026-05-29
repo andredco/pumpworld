@@ -316,10 +316,10 @@ export function seedWorld(): World {
   // Place each on a distinct civic plot. We want exactly: courthouse, town hall,
   // jail, temple. Gallows is right next to the courthouse.
   const civicSpecs: { kind: Building["kind"]; name: string; size: { x: number; z: number; h: number } }[] = [
-    { kind: "courthouse", name: "Pill World Courthouse",  size: { x: 16, z: 16, h: 8 } },
-    { kind: "town_hall",  name: "Pill World Town Hall",   size: { x: 18, z: 14, h: 9 } },
+    { kind: "courthouse", name: "Pill Experiment Courthouse",  size: { x: 16, z: 16, h: 8 } },
+    { kind: "town_hall",  name: "Pill Experiment Town Hall",   size: { x: 18, z: 14, h: 9 } },
     { kind: "temple",     name: "Temple of the Spring",   size: { x: 12, z: 12, h: 10 } },
-    { kind: "jail",       name: "Pill World Holding",     size: { x: 14, z: 12, h: 6 } },
+    { kind: "jail",       name: "Pill Experiment Holding",     size: { x: 14, z: 12, h: 6 } },
   ];
   let courthouse: Building | null = null;
   for (const spec of civicSpecs) {

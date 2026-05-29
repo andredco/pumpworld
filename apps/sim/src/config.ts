@@ -98,7 +98,7 @@ export const config = {
     defaultModel: process.env.OPENROUTER_DEFAULT_MODEL ?? "meta-llama/llama-3.1-8b-instruct",
     /** Headers OpenRouter recommends for analytics. */
     appUrl: process.env.OPENROUTER_APP_URL ?? "https://pill.world",
-    appTitle: process.env.OPENROUTER_APP_TITLE ?? "Pill World",
+    appTitle: process.env.OPENROUTER_APP_TITLE ?? "The Pill Experiment",
   },
   /** Google AI Studio / Gemini Developer API (AIza… keys). */
   gemini: {

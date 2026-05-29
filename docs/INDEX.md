@@ -1,10 +1,10 @@
-# Pill World documentation
+# The Pill Experiment documentation
 
 Technical reference for the simulation stack and token coupling.
 
 | Doc | Contents |
 |-----|----------|
-| **[PILL_WORLD.md](PILL_WORLD.md)** | Product/spec narrative, architecture summary, **mathematical appendix** (market influence, Spring, needs) |
+| **[PILL_EXPERIMENT.md](PILL_EXPERIMENT.md)** | Product/spec narrative, architecture summary, **mathematical appendix** (market influence, Spring, needs) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Tick order, protocol boundaries, extension points |
 | [TOKEN.md](TOKEN.md) | $PILLS mechanics, fees, on-chain notes |
 | [AI_PROVIDERS.md](AI_PROVIDERS.md) | Model backends and env keys |

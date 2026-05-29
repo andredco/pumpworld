@@ -1,3 +1,5 @@
+import { BRAND_NAME } from "../brand.js";
+
 /**
  * Token-related constants & helpers. When the token launches, the launch repo
  * sets PUMPWORLD_TOKEN_MINT etc. and we'll swap the stubbed values for live
@@ -7,7 +9,7 @@
 
 export const TOKEN = {
   symbol: "$PILLS",
-  name: "Pill World",
+  name: BRAND_NAME,
   network: "Solana",
   /** Launch venue. */
   launchVenue: "pump.fun",

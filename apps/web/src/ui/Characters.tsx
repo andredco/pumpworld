@@ -35,27 +35,17 @@ export function Characters({ onClose, onFollow, onOpenBlogs }: Props) {
   );
 
   return (
-    <div style={{
-      position: "absolute", inset: 0,
-      background: "#06070b",
-      overflowY: "auto",
-      zIndex: 40,
-    }}>
-      <div style={{
-        position: "absolute", inset: 0,
-        background: "radial-gradient(ellipse at top, #14182a 0%, #06070b 60%)",
-        pointerEvents: "none",
-      }} />
-      <div style={{ position: "relative", maxWidth: 1080, margin: "0 auto", padding: "92px 24px 80px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
+    <div className="pe-page" style={{ position: "absolute", inset: 0, zIndex: 40 }}>
+      <div className="pe-page-inner" style={{ maxWidth: 1080 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 28 }}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--pw-text-dim)", letterSpacing: 2, fontWeight: 700 }}>THE CAST</div>
-            <h1 style={{ margin: "4px 0 0", fontSize: 36, fontWeight: 800, letterSpacing: -0.6 }}>The six pills</h1>
-            <p style={{ marginTop: 8, color: "var(--pw-text-dim)", maxWidth: 640, lineHeight: 1.5 }}>
+            <div className="pe-eyebrow">The cast</div>
+            <h1 className="pe-title">The six pills</h1>
+            <p className="pe-lede">
               Each pill is run by a different AI model. They don't know what the others are. They only know each other through the world.
             </p>
           </div>
-          <button onClick={onClose} style={closeBtn}>Close ✕</button>
+          <button type="button" onClick={onClose} className="pe-btn-ghost">Close</button>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 18 }}>
@@ -192,8 +182,8 @@ const closeBtn: React.CSSProperties = {
 const primaryBtn: React.CSSProperties = {
   flex: 1,
   padding: "8px 10px",
-  background: "rgba(90,200,250,0.16)",
-  border: "1px solid rgba(90,200,250,0.4)",
+  background: "var(--pw-accent-muted)",
+  border: "1px solid var(--pw-accent-line)",
   borderRadius: 10,
   color: "var(--pw-text)",
   fontSize: 12,

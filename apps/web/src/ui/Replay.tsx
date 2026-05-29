@@ -41,26 +41,18 @@ export function Replay({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <div style={{
-      position: "absolute", inset: 0,
-      background: "radial-gradient(ellipse at top, #15203a 0%, #07090c 60%)",
-      color: "var(--pw-text)",
-      overflowY: "auto",
-      padding: "24px 24px 64px",
-    }}>
-      <div style={{ maxWidth: 880, margin: "0 auto" }}>
+    <div className="pe-page" style={{ position: "absolute", inset: 0, overflowY: "auto" }}>
+      <div className="pe-page-inner" style={{ maxWidth: 880 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--pw-text-dim)", letterSpacing: 2, fontWeight: 700 }}>RECORDINGS</div>
-            <h1 style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 800, letterSpacing: -0.6 }}>
-              Replays of past worlds
-            </h1>
-            <div style={{ marginTop: 6, color: "var(--pw-text-dim)", fontSize: 14, maxWidth: 600, lineHeight: 1.5 }}>
-              Every run of Pumpworld is recorded automatically: every move, every word, every death.
+            <div className="pe-eyebrow">Recordings</div>
+            <h1 className="pe-title">Replays of past worlds</h1>
+            <p className="pe-lede">
+              Every run of this experiment is recorded automatically: every move, every word, every death.
               Pick one to scrub through it inside the same 3D viewer.
-            </div>
+            </p>
           </div>
-          <button onClick={onBack} style={ghostBtn}>← Home</button>
+          <button type="button" onClick={onBack} className="pe-btn-ghost">← Home</button>
         </div>
 
         {error && <div style={{ marginTop: 24, padding: 12, background: "rgba(244,114,114,0.08)", border: "1px solid rgba(244,114,114,0.2)", borderRadius: 8, color: "var(--pw-bad)" }}>Could not load recordings: {error}</div>}
@@ -116,8 +108,8 @@ export function Replay({ onBack }: { onBack: () => void }) {
                 </div>
                 <span style={{
                   padding: "10px 18px",
-                  background: playable ? "rgba(90,200,250,0.14)" : "transparent",
-                  border: `1px solid ${playable ? "rgba(90,200,250,0.35)" : "var(--pw-border)"}`,
+                  background: playable ? "var(--pw-accent-muted)" : "transparent",
+                  border: `1px solid ${playable ? "var(--pw-accent-line)" : "var(--pw-border)"}`,
                   borderRadius: 99,
                   color: playable ? "var(--pw-text)" : "var(--pw-text-faint)",
                   fontSize: 11,
@@ -166,8 +158,8 @@ function Player({ runId, onBack, onHome }: { runId: string; onBack: () => void; 
       <div style={{
         position: "absolute", top: 16, left: 290,
         padding: "8px 12px",
-        background: "rgba(90,200,250,0.16)",
-        border: "1px solid rgba(90,200,250,0.4)",
+        background: "var(--pw-accent-muted)",
+        border: "1px solid var(--pw-accent-line)",
         borderRadius: 99,
         color: "var(--pw-text)",
         fontSize: 11, letterSpacing: 1.4, fontWeight: 700,
@@ -204,8 +196,8 @@ function Player({ runId, onBack, onHome }: { runId: string; onBack: () => void; 
                 onClick={() => setSpeedIdx(i)}
                 style={{
                   ...chip,
-                  background: i === speedIdx ? "rgba(90,200,250,0.14)" : "transparent",
-                  borderColor: i === speedIdx ? "rgba(90,200,250,0.4)" : "var(--pw-border)",
+                  background: i === speedIdx ? "var(--pw-accent-muted)" : "transparent",
+                  borderColor: i === speedIdx ? "var(--pw-accent-line)" : "var(--pw-border)",
                   color: i === speedIdx ? "var(--pw-text)" : "var(--pw-text-dim)",
                 }}
               >
@@ -267,8 +259,8 @@ const ghostBtn: React.CSSProperties = {
 
 const iconBtn: React.CSSProperties = {
   padding: "8px 14px",
-  background: "rgba(90,200,250,0.14)",
-  border: "1px solid rgba(90,200,250,0.4)",
+  background: "var(--pw-accent-muted)",
+  border: "1px solid var(--pw-accent-line)",
   borderRadius: 8,
   color: "var(--pw-text)",
   fontSize: 13,

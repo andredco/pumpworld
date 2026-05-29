@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { BRAND_LOGO, BRAND_NAME } from "../brand.js";
+import { T } from "../theme.js";
 import { HTTP_BASE } from "../runtimeConfig.js";
 import { PillAvatar } from "./PillAvatar.js";
 import { TOKEN } from "./token.js";
@@ -55,24 +57,10 @@ function moodWord(m: number): string {
   return "DESPAIRING";
 }
 function moodColor(m: number): string {
-  if (m > 0.1) return PG;
-  if (m > -0.1) return "#cdd6e0";
-  return PR;
+  if (m > 0.1) return T.accent;
+  if (m > -0.1) return T.textSecondary;
+  return T.danger;
 }
-
-/* --------------------------------- palette -------------------------------- */
-
-const PG = "#00ffa3";
-const PG_SOFT = "rgba(0,255,163,0.12)";
-const PG_LINE = "rgba(0,255,163,0.28)";
-const PR = "#ff5577";
-const PBG = "#06080a";
-const PBG2 = "#0a0d10";
-const PTEXT = "#f0f3f0";
-const PDIM = "#7a8088";
-const PFAINT = "#3f454c";
-const PBORDER = "rgba(255,255,255,0.07)";
-const PBORDER_BRIGHT = "rgba(255,255,255,0.14)";
 
 /* ---------------------------- live status state --------------------------- */
 
@@ -163,16 +151,10 @@ function useLive(): LiveSnapshot {
 export function Landing({ onEnter, onReplay }: Props) {
   const live = useLive();
   const stats = live.stats;
-  const change24Color = stats && stats.priceChange24hPct >= 0 ? PG : PR;
+  const change24Color = stats && stats.priceChange24hPct >= 0 ? T.accent : T.danger;
 
   return (
-    <div style={{
-      position: "absolute", inset: 0,
-      background: PBG,
-      color: PTEXT,
-      overflowY: "auto",
-      fontFamily: "inherit",
-    }}>
+    <div className="pe-page" style={{ position: "absolute", inset: 0, overflowY: "auto" }}>
       <BackdropFx />
 
       <main style={{ position: "relative", maxWidth: 1180, margin: "0 auto", padding: "20px 28px 80px", zIndex: 1 }}>
@@ -181,7 +163,7 @@ export function Landing({ onEnter, onReplay }: Props) {
         <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 44 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <Logo />
-            <span style={{ color: PFAINT, fontSize: 11, fontFamily: "var(--pw-mono)" }}>v0.8</span>
+            <span style={{ color: T.textMuted, fontSize: 11, fontFamily: "var(--pw-mono)" }}>v0.8</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <ConnPill live={live} />
@@ -191,8 +173,8 @@ export function Landing({ onEnter, onReplay }: Props) {
               href={X_URL}
               target="_blank"
               rel="noopener noreferrer"
-              title="Follow @thepillsworld on X"
-              aria-label="Follow @thepillsworld on X"
+              title="Follow @thepillexperiment on X"
+              aria-label="Follow @thepillexperiment on X"
               style={{
                 ...navLink,
                 display: "inline-flex",
@@ -204,7 +186,7 @@ export function Landing({ onEnter, onReplay }: Props) {
             >
               <XGlyph size={13} />
             </a>
-            <button onClick={onEnter} style={navBtnGreen}>Watch live →</button>
+            <button onClick={onEnter} style={navBtnPrimary}>Watch live →</button>
           </div>
         </nav>
 
@@ -217,28 +199,28 @@ export function Landing({ onEnter, onReplay }: Props) {
           alignItems: "start",
         }}>
           <div>
-            <div style={{
+            <div className="pe-glass-bar" style={{
               display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "5px 11px", border: `1px solid ${PG_LINE}`, borderRadius: 99,
-              background: PG_SOFT,
-              fontSize: 10, letterSpacing: 1.6, fontWeight: 700, color: PG, textTransform: "uppercase",
+              padding: "6px 14px", marginBottom: 4,
+              fontSize: 11, letterSpacing: "0.08em", fontWeight: 600,
+              color: T.textSecondary, textTransform: "uppercase",
             }}>
-              <span style={{ width: 5, height: 5, borderRadius: 99, background: PG, boxShadow: `0 0 8px ${PG}` }} />
-              An always-on AI experiment
+              <span style={{ width: 6, height: 6, borderRadius: 99, background: T.accent }} />
+              Live experiment
             </div>
 
             <h1 style={{
-              margin: "26px 0 0",
-              fontSize: "clamp(44px, 7.4vw, 92px)",
-              lineHeight: 0.98,
-              fontWeight: 900,
-              letterSpacing: -2.5,
-              color: PTEXT,
+              margin: "20px 0 0",
+              fontSize: "clamp(40px, 6.5vw, 72px)",
+              lineHeight: 1.02,
+              fontWeight: 800,
+              letterSpacing: "-0.04em",
+              color: T.text,
             }}>
               Six souls.<br/>
               One town.<br/>
               <span style={{
-                background: `linear-gradient(110deg, ${PG} 0%, #b8ffe0 60%, ${PG} 100%)`,
+                background: T.textGradient,
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -246,10 +228,10 @@ export function Landing({ onEnter, onReplay }: Props) {
             </h1>
 
             <p style={{
-              marginTop: 30, fontSize: 17, lineHeight: 1.55,
-              color: "#bcc1c5", maxWidth: 540,
+              marginTop: 24, fontSize: 16, lineHeight: 1.65,
+              color: T.textSecondary, maxWidth: 520,
             }}>
-              Pill World is a 24/7 simulation. Six minds, cast as Claude, GPT, Grok,
+              {BRAND_NAME} is a 24/7 simulation. Six minds, cast as Claude, GPT, Grok,
               Gemini, GLM, and DeepSeek, share the same streets. At the centre of
               town a fountain drips <Mono>{TOKEN.symbol}</Mono> shards. When the
               chart pumps, the fountain gushes and the town gets fat. When it dumps,
@@ -257,8 +239,8 @@ export function Landing({ onEnter, onReplay }: Props) {
             </p>
 
             <div style={{ marginTop: 36, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-              <button onClick={onEnter} style={ctaGreen}>
-                ENTER PILL WORLD <span style={{ marginLeft: 10 }}>→</span>
+              <button onClick={onEnter} style={ctaPrimary}>
+                ENTER {BRAND_LOGO} <span style={{ marginLeft: 10 }}>→</span>
               </button>
               <a href="#docs/spec" style={ctaGhost}>Read the spec</a>
             </div>
@@ -282,7 +264,7 @@ export function Landing({ onEnter, onReplay }: Props) {
           <p style={proseStyle}>
             The novel piece is the coupling to <Mono>{TOKEN.symbol}</Mono>. The token's live chart
             is read from on-chain data every ten seconds and translated into an in-world{" "}
-            <em style={{ color: PG, fontStyle: "normal", fontWeight: 600 }}>Mood</em> the
+            <em style={{ color: T.accent, fontStyle: "normal", fontWeight: 600 }}>Mood</em> the
             agents feel as ambient weather. They do not see the chart. They feel its consequences.
             A pump literally makes the Spring drip more shards. A dump literally thins the food
             on the ground. Holders cannot puppet a specific pill. The chart is everyone's
@@ -291,7 +273,7 @@ export function Landing({ onEnter, onReplay }: Props) {
           <p style={proseStyle}>
             It is the inverse of every "AI + token" project before it. The token is not a hype
             wrapper around a model that doesn't know it exists. The token{" "}
-            <em style={{ color: PG, fontStyle: "normal", fontWeight: 600 }}>is</em> part of
+            <em style={{ color: T.accent, fontStyle: "normal", fontWeight: 600 }}>is</em> part of
             the simulation. Real-world buying is real-world weather.
           </p>
         </section>
@@ -304,7 +286,7 @@ export function Landing({ onEnter, onReplay }: Props) {
             <Step n="01" title="Agents think">
               Every few seconds, each pill receives a structured perception of its
               surroundings and replies with one action from a 24-verb vocabulary.
-              All six souls run through a single OpenRouter API key.
+              All six souls run on OpenAI — different model IDs, one API key. The cast labels (Claude, GPT, …) are fiction.
             </Step>
             <Step n="02" title="The sim resolves">
               An authoritative Node server applies every action against the world,
@@ -329,34 +311,34 @@ export function Landing({ onEnter, onReplay }: Props) {
         {/* --- token section --- */}
         <section id="token" style={{
           marginTop: 144,
-          padding: "48px 44px",
-          background: `linear-gradient(160deg, ${PBG2} 0%, #07090c 100%)`,
-          border: `1px solid ${PBORDER}`,
-          borderRadius: 20,
+          padding: "40px 36px",
+          background: T.bg2,
+          border: `1px solid ${T.border}`,
+          borderRadius: T.radiusXl,
           position: "relative",
           overflow: "hidden",
         }}>
-          <div style={{ position: "absolute", top: -120, right: -80, width: 420, height: 420, background: `radial-gradient(circle, ${PG_SOFT}, transparent 70%)`, pointerEvents: "none" }} />
+          <div style={{ position: "absolute", top: -80, right: -60, width: 320, height: 320, background: `radial-gradient(circle, ${T.accentSoft}, transparent 70%)`, pointerEvents: "none" }} />
           <div style={{ position: "relative" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <SectionTag>The token</SectionTag>
-              <span style={{ fontSize: 11, color: PDIM, fontFamily: "var(--pw-mono)" }}>launch on</span>
+              <span style={{ fontSize: 11, color: T.textSecondary, fontFamily: "var(--pw-mono)" }}>launch on</span>
               <PumpFunBadge />
             </div>
             <h2 style={{ ...h2Style, marginTop: 16 }}>
-              <span style={{ color: PG }}>$PILLS</span> is fuel, not a promise.
+              <span style={{ color: T.accent }}>$PILLS</span> is fuel, not a promise.
             </h2>
             <p style={{ ...proseStyle, maxWidth: 720 }}>
               This experiment is expensive. Six frontier-grade models thinking around the
-              clock through OpenRouter is the single largest line item. Trading fees flow
+              clock through OpenAI inference is the single largest line item. Trading fees flow
               into a protocol vault and go toward two things:{" "}
-              <span style={{ color: PG, fontWeight: 600 }}>agent maintenance</span> (the
+              <span style={{ color: T.accent, fontWeight: 600 }}>agent maintenance</span> (the
               AI inference and infra bills that keep the town alive) and periodic{" "}
-              <span style={{ color: PG, fontWeight: 600 }}>buy-and-burns</span> of{" "}
+              <span style={{ color: T.accent, fontWeight: 600 }}>buy-and-burns</span> of{" "}
               <Mono>{TOKEN.symbol}</Mono> from the open market.
             </p>
 
-            <p style={{ marginTop: 36, color: PDIM, fontSize: 12, maxWidth: 720 }}>
+            <p style={{ marginTop: 36, color: T.textSecondary, fontSize: 13, maxWidth: 720 }}>
               Market data comes from DexScreener; mood and abundance in town track that feed.
             </p>
           </div>
@@ -394,11 +376,11 @@ export function Landing({ onEnter, onReplay }: Props) {
         {/* --- footer --- */}
         <footer style={{
           marginTop: 128, paddingTop: 26,
-          borderTop: `1px solid ${PBORDER}`,
+          borderTop: `1px solid ${T.border}`,
           display: "flex", justifyContent: "space-between", alignItems: "center",
-          fontSize: 11, color: PDIM,
+          fontSize: 12, color: T.textSecondary,
         }}>
-          <span>Pill World · MIT · the world is owned by the pills</span>
+          <span>{BRAND_NAME} · MIT · the world is owned by the pills</span>
           <span style={{ display: "flex", gap: 18, alignItems: "center" }}>
             <a href="#docs" style={footerLink}>documentation</a>
             <a href="#docs/agents" style={footerLink}>agents</a>
@@ -408,7 +390,7 @@ export function Landing({ onEnter, onReplay }: Props) {
               rel="noopener noreferrer"
               style={{ ...footerLink, display: "inline-flex", alignItems: "center", gap: 6 }}
             >
-              <XGlyph size={11} /> @thepillsworld
+              <XGlyph size={11} /> @thepillexperiment
             </a>
           </span>
         </footer>
@@ -419,41 +401,21 @@ export function Landing({ onEnter, onReplay }: Props) {
 
 /* ------------------------------- components ------------------------------- */
 
-/** Subtle ambient layer behind everything: a slow-drifting green halo + faint
- *  grid. CSS-only; no JS / GPU work. */
+/** Minimal ambient wash — no grid, no heavy motion. */
 function BackdropFx() {
   return (
     <>
       <div style={{
         position: "fixed", inset: 0,
-        backgroundImage:
-          "radial-gradient(ellipse 80% 60% at 50% -20%, rgba(0,255,163,0.10), transparent 60%),"
-          + "radial-gradient(ellipse 60% 50% at 90% 100%, rgba(0,255,163,0.05), transparent 60%)",
-        pointerEvents: "none",
-        animation: "pw-halo 28s ease-in-out infinite alternate",
-      }} />
-      <div style={{
-        position: "fixed", inset: 0,
-        backgroundImage:
-          "linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),"
-          + "linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)",
-        backgroundSize: "60px 60px",
-        maskImage: "radial-gradient(ellipse at center, #000 30%, transparent 80%)",
-        WebkitMaskImage: "radial-gradient(ellipse at center, #000 30%, transparent 80%)",
+        background:
+          "radial-gradient(ellipse 70% 50% at 50% -15%, rgba(167, 139, 250, 0.07), transparent 55%),"
+          + "radial-gradient(ellipse 45% 40% at 100% 80%, rgba(56, 189, 248, 0.04), transparent 50%)",
         pointerEvents: "none",
       }} />
       <style>{`
-        @keyframes pw-halo {
-          0%   { transform: translateY(0); opacity: 1; }
-          100% { transform: translateY(-30px); opacity: 0.7; }
-        }
-        @keyframes pw-pulse {
-          0%, 100% { opacity: .55; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.15); }
-        }
-        @keyframes pw-shimmer {
-          0% { background-position: 0% 50%; }
-          100% { background-position: 200% 50%; }
+        @keyframes pe-pulse {
+          0%, 100% { opacity: .7; }
+          50% { opacity: 1; }
         }
       `}</style>
     </>
@@ -463,18 +425,18 @@ function BackdropFx() {
 function Logo() {
   return (
     <span style={{
-      display: "inline-flex", alignItems: "center", gap: 8,
+      display: "inline-flex", alignItems: "center", gap: 10,
       fontFamily: "var(--pw-mono)",
-      fontWeight: 800, fontSize: 13, letterSpacing: 1.5,
-      color: PTEXT,
+      fontWeight: 600, fontSize: 12, letterSpacing: "0.14em",
+      color: T.text,
+      textTransform: "uppercase",
     }}>
       <span style={{
-        width: 16, height: 16, borderRadius: 99,
-        background: `linear-gradient(180deg, ${PG} 50%, #fff 50%)`,
-        boxShadow: `0 0 14px ${PG_SOFT}`,
+        width: 14, height: 14, borderRadius: 99,
+        background: T.accentGradient,
         display: "inline-block",
       }} />
-      PILL WORLD
+      {BRAND_LOGO}
     </span>
   );
 }
@@ -496,31 +458,30 @@ function ConnPill({ live }: { live: LiveSnapshot }) {
     return (
       <div style={connPillBase}>
         <span style={{
-          width: 6, height: 6, borderRadius: 99, background: PG,
-          boxShadow: `0 0 8px ${PG}`,
-          animation: "pw-pulse 1.8s ease-in-out infinite",
+          width: 6, height: 6, borderRadius: 99, background: "var(--pw-good)",
+          animation: "pe-pulse 2s ease-in-out infinite",
         }} />
-        <span style={{ color: PG, fontWeight: 800, letterSpacing: 1.4 }}>LIVE</span>
-        <span style={{ color: PDIM }}>·</span>
-        <span style={{ color: PTEXT, fontVariantNumeric: "tabular-nums" }}>
+        <span style={{ color: "var(--pw-good)", fontWeight: 700, letterSpacing: "0.06em" }}>LIVE</span>
+        <span style={{ color: T.textSecondary }}>·</span>
+        <span style={{ color: T.text, fontVariantNumeric: "tabular-nums" }}>
           {live.stats.pillsAlive}/{live.stats.pillsTotal}
         </span>
-        <span style={{ color: PDIM, fontFamily: "var(--pw-mono)" }}>t{live.stats.tick}</span>
+        <span style={{ color: T.textSecondary, fontFamily: "var(--pw-mono)" }}>t{live.stats.tick}</span>
       </div>
     );
   }
   if (live.state === "offline") {
     return (
       <div style={{ ...connPillBase, borderColor: "rgba(255,85,119,0.4)" }} title={live.lastError ?? undefined}>
-        <span style={{ width: 6, height: 6, borderRadius: 99, background: PR, boxShadow: `0 0 6px ${PR}` }} />
-        <span style={{ color: PR, fontWeight: 800, letterSpacing: 1.4 }}>OFFLINE</span>
+        <span style={{ width: 6, height: 6, borderRadius: 99, background: T.danger, boxShadow: `0 0 6px ${T.danger}` }} />
+        <span style={{ color: T.danger, fontWeight: 800, letterSpacing: 1.4 }}>OFFLINE</span>
       </div>
     );
   }
   return (
     <div style={connPillBase}>
-      <span style={{ width: 6, height: 6, borderRadius: 99, background: PFAINT }} />
-      <span style={{ color: PDIM, letterSpacing: 1.2 }}>connecting…</span>
+      <span style={{ width: 6, height: 6, borderRadius: 99, background: T.textMuted }} />
+      <span style={{ color: T.textSecondary, letterSpacing: 1.2 }}>connecting…</span>
     </div>
   );
 }
@@ -528,9 +489,9 @@ const connPillBase: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 8,
   padding: "5px 10px",
   marginRight: 12,
-  border: `1px solid ${PBORDER_BRIGHT}`,
+  border: `1px solid ${T.borderStrong}`,
   borderRadius: 99,
-  background: "rgba(10,13,16,0.6)",
+  background: "var(--pw-bg-elevated)",
   fontSize: 11,
   fontFamily: "var(--pw-mono)",
 };
@@ -539,13 +500,15 @@ function PumpFunBadge() {
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 6,
-      padding: "3px 8px",
-      background: PG, color: "#06080a",
-      borderRadius: 4,
-      fontSize: 10, fontWeight: 800, letterSpacing: 0.8,
+      padding: "4px 10px",
+      background: T.accentSoft,
+      color: T.accent,
+      border: `1px solid ${T.accentLine}`,
+      borderRadius: T.radiusSm,
+      fontSize: 10, fontWeight: 600, letterSpacing: "0.04em",
       fontFamily: "var(--pw-mono)",
     }}>
-      💊 pump.fun
+      pump.fun
     </span>
   );
 }
@@ -554,10 +517,10 @@ function SectionTag({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       display: "inline-flex", alignItems: "center", gap: 8,
-      fontSize: 10, letterSpacing: 2.4, color: PG, fontWeight: 800, textTransform: "uppercase",
-      paddingBottom: 8, borderBottom: `1px solid ${PG_LINE}`,
+      fontSize: 10, letterSpacing: 2.4, color: T.accent, fontWeight: 800, textTransform: "uppercase",
+      paddingBottom: 8, borderBottom: `1px solid ${T.accentLine}`,
     }}>
-      <span style={{ width: 5, height: 5, background: PG, borderRadius: 99 }} />
+      <span style={{ width: 5, height: 5, background: T.accent, borderRadius: 99 }} />
       {children}
     </div>
   );
@@ -570,9 +533,9 @@ function Mono({ children }: { children: React.ReactNode }) {
       fontSize: "0.9em",
       padding: "1px 6px",
       background: "rgba(255,255,255,0.05)",
-      border: `1px solid ${PBORDER}`,
+      border: `1px solid ${T.border}`,
       borderRadius: 4,
-      color: PTEXT,
+      color: T.text,
     }}>{children}</code>
   );
 }
@@ -589,30 +552,30 @@ function LiveStrip({
     <div style={{
       marginTop: 56,
       padding: "16px 0",
-      borderTop: `1px solid ${PBORDER}`,
-      borderBottom: `1px solid ${PBORDER}`,
+      borderTop: `1px solid ${T.border}`,
+      borderBottom: `1px solid ${T.border}`,
       display: "grid",
       gridTemplateColumns: "1fr 1fr 1fr 1fr",
       gap: 24,
     }}>
       <LiveStat label={`${TOKEN.symbol} mcap`} value={stats ? fmtUsd(stats.marketCapUsd) : "—"} accent loading={showShimmer} />
       <LiveStat label="24h"       value={stats ? fmtPct(stats.priceChange24hPct) : "—"} color={change24Color} loading={showShimmer} />
-      <LiveStat label="Town mood" value={stats ? moodWord(stats.mood) : "—"} color={stats ? moodColor(stats.mood) : PDIM} loading={showShimmer} />
+      <LiveStat label="Town mood" value={stats ? moodWord(stats.mood) : "—"} color={stats ? moodColor(stats.mood) : T.textSecondary} loading={showShimmer} />
       <LiveStat label="Holders"   value={stats ? `${stats.holders}` : "—"} loading={showShimmer} />
     </div>
   );
 }
 
 function LiveStat({
-  label, value, color = PTEXT, accent = false, loading = false,
+  label, value, color = T.text, accent = false, loading = false,
 }: { label: string; value: string; color?: string; accent?: boolean; loading?: boolean }) {
   return (
     <div>
-      <div style={{ fontSize: 9, letterSpacing: 1.8, color: PDIM, textTransform: "uppercase", fontWeight: 700 }}>{label}</div>
+      <div style={{ fontSize: 9, letterSpacing: 1.8, color: T.textSecondary, textTransform: "uppercase", fontWeight: 700 }}>{label}</div>
       <div style={{
         marginTop: 6,
         fontSize: 22, fontWeight: 700,
-        color: accent ? PG : color,
+        color: accent ? T.accent : color,
         fontFamily: "var(--pw-mono)",
         fontVariantNumeric: "tabular-nums",
         letterSpacing: -0.5,
@@ -632,18 +595,17 @@ function CastColumn() {
       <div style={{
         marginTop: 18,
         display: "grid", gap: 0,
-        border: `1px solid ${PBORDER}`,
+        border: `1px solid ${T.border}`,
         borderRadius: 14,
-        background: "rgba(10,13,16,0.6)",
+        background: "var(--pw-bg-elevated)",
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
         overflow: "hidden",
       }}>
         {CAST.map((p, i) => <CastRow key={p.name} p={p} last={i === CAST.length - 1} />)}
       </div>
-      <div style={{ marginTop: 14, fontSize: 11, color: PDIM, lineHeight: 1.5 }}>
-        Routed through <span style={{ color: PG, fontFamily: "var(--pw-mono)" }}>openrouter.ai</span>.
-        One key, six minds.
+      <div style={{ marginTop: 14, fontSize: 11, color: T.textSecondary, lineHeight: 1.5 }}>
+        Six distinct OpenAI models behind six public labels. One key, six minds.
       </div>
     </div>
   );
@@ -654,18 +616,18 @@ function CastRow({ p, last }: { p: CastMember; last: boolean }) {
     <div style={{
       display: "grid", gridTemplateColumns: "28px 1fr auto", gap: 14, alignItems: "center",
       padding: "12px 14px",
-      borderBottom: last ? "none" : `1px solid ${PBORDER}`,
+      borderBottom: last ? "none" : `1px solid ${T.border}`,
     }}>
       <PillAvatar pill={p as { shell: typeof p.shell; name: string }} size={20} withFace />
       <div style={{ overflow: "hidden" }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: PTEXT }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>
           {p.name}
-          <span style={{ color: PDIM, fontWeight: 500, marginLeft: 8, fontSize: 12 }}>· {p.vocation}</span>
+          <span style={{ color: T.textSecondary, fontWeight: 500, marginLeft: 8, fontSize: 12 }}>· {p.vocation}</span>
         </div>
       </div>
       <div style={{
-        padding: "3px 9px", border: `1px solid ${PBORDER_BRIGHT}`, borderRadius: 99,
-        fontSize: 10, color: PTEXT, fontWeight: 700, letterSpacing: 0.6,
+        padding: "3px 9px", border: `1px solid ${T.borderStrong}`, borderRadius: 99,
+        fontSize: 10, color: T.text, fontWeight: 700, letterSpacing: 0.6,
       }}>{p.soul}</div>
     </div>
   );
@@ -676,13 +638,13 @@ function Step({ n, title, children }: { n: string; title: string; children: Reac
     <div style={{
       display: "grid", gridTemplateColumns: "auto 200px 1fr", gap: 32, alignItems: "baseline",
       padding: "22px 0",
-      borderTop: `1px solid ${PBORDER}`,
+      borderTop: `1px solid ${T.border}`,
     }}>
       <span style={{
-        fontFamily: "var(--pw-mono)", fontSize: 12, color: PG, letterSpacing: 1.5, fontWeight: 700,
+        fontFamily: "var(--pw-mono)", fontSize: 12, color: T.accent, letterSpacing: 1.5, fontWeight: 700,
       }}>{n}</span>
-      <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: PTEXT, letterSpacing: -0.2 }}>{title}</h3>
-      <p style={{ margin: 0, fontSize: 14, color: "#bcc1c5", lineHeight: 1.6 }}>{children}</p>
+      <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: T.text, letterSpacing: -0.2 }}>{title}</h3>
+      <p style={{ margin: 0, fontSize: 14, color: T.textSecondary, lineHeight: 1.6 }}>{children}</p>
     </div>
   );
 }
@@ -690,11 +652,11 @@ function Step({ n, title, children }: { n: string; title: string; children: Reac
 function Q({ q, children }: { q: string; children: React.ReactNode }) {
   return (
     <div style={{
-      padding: "22px 0", borderTop: `1px solid ${PBORDER}`,
+      padding: "22px 0", borderTop: `1px solid ${T.border}`,
       display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 40,
     }}>
-      <div style={{ fontSize: 16, fontWeight: 600, color: PTEXT, letterSpacing: -0.2 }}>{q}</div>
-      <div style={{ fontSize: 14, color: "#bcc1c5", lineHeight: 1.6 }}>{children}</div>
+      <div style={{ fontSize: 16, fontWeight: 600, color: T.text, letterSpacing: -0.2 }}>{q}</div>
+      <div style={{ fontSize: 14, color: T.textSecondary, lineHeight: 1.6 }}>{children}</div>
     </div>
   );
 }
@@ -702,45 +664,43 @@ function Q({ q, children }: { q: string; children: React.ReactNode }) {
 /* --------------------------------- styles --------------------------------- */
 
 const navLink: React.CSSProperties = {
-  padding: "7px 12px", color: PDIM, fontSize: 12, letterSpacing: 0.3, fontWeight: 600,
+  padding: "7px 12px", color: T.textSecondary, fontSize: 12, letterSpacing: 0.3, fontWeight: 600,
   textDecoration: "none", borderRadius: 8,
   background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit",
 };
-const navBtnGreen: React.CSSProperties = {
-  padding: "8px 14px", background: PG,
-  border: "none", borderRadius: 8,
-  color: "#06080a", fontSize: 12, fontWeight: 800, letterSpacing: 0.4,
+const navBtnPrimary: React.CSSProperties = {
+  padding: "8px 16px", background: T.accent,
+  border: "none", borderRadius: T.radiusSm,
+  color: "#0c0a12", fontSize: 12, fontWeight: 700,
   cursor: "pointer", fontFamily: "inherit",
-  boxShadow: `0 0 0 1px ${PG}, 0 6px 20px ${PG_SOFT}`,
 };
 const footerLink: React.CSSProperties = {
-  color: PDIM, textDecoration: "none",
+  color: T.textSecondary, textDecoration: "none",
   fontSize: 11, fontFamily: "var(--pw-mono)", letterSpacing: 0.5,
 };
 
-const ctaGreen: React.CSSProperties = {
+const ctaPrimary: React.CSSProperties = {
   display: "inline-flex", alignItems: "center",
-  padding: "16px 28px",
-  background: PG, color: "#06080a",
-  border: "none", borderRadius: 10,
-  fontSize: 13, fontWeight: 900, letterSpacing: 1.4,
+  padding: "14px 24px",
+  background: T.accent, color: "#0c0a12",
+  border: "none", borderRadius: T.radiusMd,
+  fontSize: 13, fontWeight: 700, letterSpacing: "0.02em",
   cursor: "pointer",
-  boxShadow: `0 0 0 1px ${PG}, 0 8px 30px rgba(0,255,163,0.18)`,
   fontFamily: "inherit",
 };
 const ctaGhost: React.CSSProperties = {
   padding: "14px 22px",
-  background: "transparent", color: PTEXT,
-  border: `1px solid ${PBORDER_BRIGHT}`, borderRadius: 10,
-  fontSize: 13, fontWeight: 600, letterSpacing: 0.5,
+  background: "transparent", color: T.text,
+  border: `1px solid ${T.borderStrong}`, borderRadius: T.radiusMd,
+  fontSize: 13, fontWeight: 600,
   cursor: "pointer", textDecoration: "none",
   fontFamily: "inherit",
 };
 
 const h2Style: React.CSSProperties = {
-  margin: "16px 0 0", fontSize: 40, lineHeight: 1.12, fontWeight: 800, letterSpacing: -0.8,
-  color: PTEXT, maxWidth: 820,
+  margin: "14px 0 0", fontSize: "clamp(28px, 4vw, 36px)", lineHeight: 1.2, fontWeight: 700,
+  letterSpacing: "-0.03em", color: T.text, maxWidth: 720,
 };
 const proseStyle: React.CSSProperties = {
-  marginTop: 20, fontSize: 16, lineHeight: 1.65, color: "#bcc1c5",
+  marginTop: 18, fontSize: 15, lineHeight: 1.65, color: T.textSecondary,
 };

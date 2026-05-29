@@ -10,10 +10,7 @@ function fmtUsd(n: number | null): string {
   if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
   if (n >= 1) return `$${n.toFixed(2)}`;
   if (n >= 0.01) return `$${n.toFixed(4)}`;
-  if (n > 0) {
-    const e = n.toExponential(2);
-    return `$${e}`;
-  }
+  if (n > 0) return `$${n.toExponential(2)}`;
   return "$0";
 }
 function fmtCount(n: number | null): string {
@@ -53,83 +50,76 @@ export function TokenPanel() {
     influence.mood > -0.1 ? "calm" :
     influence.mood > -0.4 ? "anxious" : "despairing";
   const moodColor =
-    moodTone === "euphoric" ? "#9af075" :
-    moodTone === "rising"   ? "#7cd4a2" :
-    moodTone === "calm"     ? "#cdd6e0" :
-    moodTone === "anxious"  ? "#f0c674" :
-    moodTone === "despairing" ? "#f47272" : "#cdd6e0";
+    moodTone === "euphoric" ? "var(--pw-good)" :
+    moodTone === "rising"   ? "var(--pw-mint)" :
+    moodTone === "calm"     ? "var(--pw-text-dim)" :
+    moodTone === "anxious"  ? "var(--pw-warn)" :
+    moodTone === "despairing" ? "var(--pw-bad)" : "var(--pw-text-dim)";
 
   return (
-    <div style={{
+    <div className="pe-card" style={{
       position: "absolute", top: 76, left: 16,
       width: 280,
-      padding: "14px 16px",
-      background: "linear-gradient(180deg, rgba(20,16,8,0.92), rgba(7,9,12,0.86))",
-      border: "1px solid rgba(255,210,63,0.18)",
-      borderRadius: 14,
+      padding: "16px 18px",
+      borderRadius: "var(--pw-radius-md)",
       color: "var(--pw-text)",
-      backdropFilter: "blur(14px)",
-      WebkitBackdropFilter: "blur(14px)",
-      boxShadow: "0 16px 36px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,210,63,0.06) inset",
+      boxShadow: "var(--pw-shadow-md)",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
           <span style={{
-            fontSize: 19, fontWeight: 900, letterSpacing: 0.2,
-            background: "linear-gradient(90deg, #ffd23f 0%, #ff9a4a 50%, #ff5577 100%)",
-            WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent",
+            fontSize: 18, fontWeight: 800, letterSpacing: -0.02,
+            color: "var(--pw-accent)",
           }}>
             {TOKEN.symbol}
           </span>
-          <span style={{ fontSize: 10, color: "var(--pw-text-faint)", letterSpacing: 0.4 }}>
-            on {TOKEN.launchVenue}
+          <span style={{ fontSize: 10, color: "var(--pw-text-faint)" }}>
+            {TOKEN.launchVenue}
           </span>
         </div>
         <span style={{
-          fontSize: 9, letterSpacing: 1.4, color: "var(--pw-warn)",
-          textTransform: "uppercase", fontWeight: 800,
-          padding: "2px 7px", background: "rgba(240,198,116,0.10)",
-          borderRadius: 99, border: "1px solid rgba(240,198,116,0.3)",
+          fontSize: 9, letterSpacing: "0.1em", color: "var(--pw-text-dim)",
+          textTransform: "uppercase", fontWeight: 700,
+          padding: "3px 8px", background: "var(--pw-accent-muted)",
+          borderRadius: "var(--pw-radius-full)",
+          border: "1px solid var(--pw-border)",
         }}>
           {dexFeedLabel(stats)}
         </span>
       </div>
 
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: 10 }}>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: 12 }}>
         <div>
           <div className="pw-mono" style={{ fontSize: 22, fontWeight: 700, color: "var(--pw-text)", letterSpacing: -0.3, lineHeight: 1 }}>
             {fmtUsd(stats?.marketCapUsd ?? null)}
           </div>
-          <div style={{ marginTop: 2, fontSize: 10, color: "var(--pw-text-faint)", letterSpacing: 1.2, textTransform: "uppercase" }}>
-            Market Cap
+          <div style={{ marginTop: 4, fontSize: 10, color: "var(--pw-text-faint)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            Market cap
           </div>
         </div>
         <Spark values={stats?.spark ?? []} width={108} height={36} />
       </div>
 
-      <div style={{
-        marginTop: 10,
-        display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6,
-      }}>
-        <Stat label="PRICE"   value={fmtUsd(stats?.priceUsd ?? null)} />
-        <Stat label="24h VOL" value={fmtUsd(stats?.volume24hUsd ?? null)} />
+      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <Stat label="Price" value={fmtUsd(stats?.priceUsd ?? null)} />
+        <Stat label="24h vol" value={fmtUsd(stats?.volume24hUsd ?? null)} />
         <Stat label="24h" value={change24.text} tone={change24.tone} />
-        <Stat label="1h"  value={change1h.text} tone={change1h.tone} />
-        <Stat label="HOLDERS" value={fmtCount(stats?.holders ?? null)} />
-        <Stat label="MOOD" value={moodTone} customColor={moodColor} />
+        <Stat label="1h" value={change1h.text} tone={change1h.tone} />
+        <Stat label="Holders" value={fmtCount(stats?.holders ?? null)} />
+        <Stat label="Mood" value={moodTone} customColor={moodColor} />
       </div>
 
       <div style={{
-        marginTop: 10, padding: "8px 10px",
-        background: "rgba(255,210,63,0.05)",
-        border: "1px solid rgba(255,210,63,0.14)",
-        borderRadius: 10,
+        marginTop: 12, padding: "10px 12px",
+        background: "var(--pw-bg-2)",
+        border: "1px solid var(--pw-border)",
+        borderRadius: "var(--pw-radius-sm)",
       }}>
-        <div style={{ fontSize: 9, color: "var(--pw-text-faint)", letterSpacing: 1.4, textTransform: "uppercase", marginBottom: 4 }}>
+        <div style={{ fontSize: 9, color: "var(--pw-text-faint)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>
           Town influence
         </div>
         <Bar label="abundance" value={(influence?.abundance ?? 1) / 2} display={(influence?.abundance ?? 1).toFixed(2) + "×"} />
-        <Bar label="tension"   value={influence?.volatility ?? 0} display={((influence?.volatility ?? 0) * 100).toFixed(0) + "%"} />
+        <Bar label="tension" value={influence?.volatility ?? 0} display={((influence?.volatility ?? 0) * 100).toFixed(0) + "%"} />
       </div>
     </div>
   );
@@ -143,13 +133,13 @@ function Stat({ label, value, tone, customColor }: { label: string; value: strin
      "var(--pw-text)");
   return (
     <div style={{
-      padding: "6px 9px",
-      background: "rgba(255,255,255,0.03)",
+      padding: "8px 10px",
+      background: "var(--pw-bg-2)",
       border: "1px solid var(--pw-border)",
-      borderRadius: 8,
+      borderRadius: "var(--pw-radius-sm)",
     }}>
-      <div style={{ fontSize: 9, letterSpacing: 1.2, color: "var(--pw-text-faint)", textTransform: "uppercase" }}>{label}</div>
-      <div className="pw-mono" style={{ fontSize: 13, fontWeight: 700, color }}>{value}</div>
+      <div style={{ fontSize: 9, letterSpacing: "0.08em", color: "var(--pw-text-faint)", textTransform: "uppercase" }}>{label}</div>
+      <div className="pw-mono" style={{ fontSize: 13, fontWeight: 600, color, marginTop: 2 }}>{value}</div>
     </div>
   );
 }
@@ -158,11 +148,11 @@ function Bar({ label, value, display }: { label: string; value: number; display:
   const v = Math.max(0, Math.min(1, value));
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, marginTop: 4 }}>
-      <span style={{ width: 64, color: "var(--pw-text-faint)", textTransform: "uppercase", letterSpacing: 1 }}>{label}</span>
-      <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,0.05)", borderRadius: 99, overflow: "hidden" }}>
+      <span style={{ width: 64, color: "var(--pw-text-faint)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
+      <div style={{ flex: 1, height: 4, background: "var(--pw-border)", borderRadius: 99, overflow: "hidden" }}>
         <div style={{
           width: `${v * 100}%`, height: "100%",
-          background: "linear-gradient(90deg, #ffd23f, #ff9a4a)",
+          background: "var(--pw-accent)",
           transition: "width 200ms ease",
         }} />
       </div>
@@ -175,7 +165,7 @@ function Spark({ values, width, height }: { values: number[]; width: number; hei
   if (values.length < 2) {
     return (
       <div style={{ width, height, opacity: 0.25, color: "var(--pw-text-faint)", fontSize: 9, alignSelf: "flex-end", textAlign: "right" }}>
-        ─ ─ ─
+        —
       </div>
     );
   }
@@ -201,7 +191,7 @@ function Spark({ values, width, height }: { values: number[]; width: number; hei
       />
       <polyline
         points={`0,${height} ${points} ${width},${height}`}
-        fill={up ? "rgba(124,212,162,0.15)" : "rgba(244,114,114,0.12)"}
+        fill={up ? "rgba(74, 222, 128, 0.12)" : "rgba(248, 113, 113, 0.1)"}
         stroke="none"
       />
     </svg>

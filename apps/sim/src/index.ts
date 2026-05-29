@@ -96,7 +96,7 @@ async function main() {
   // have a starting point to load.
   await writeSnapshot(runDir, world.snapshot());
 
-  console.log(`\n  PILL WORLD v${SERVER_VERSION}`);
+  console.log(`\n  PILL EXPERIMENT v${SERVER_VERSION}`);
   console.log(`  source:      ${resume.source === "snapshot" ? `resumed from tick ${resume.resumedFromTick}` : "fresh genesis"}`);
   console.log(`  seed:        ${world.meta.seed}`);
   console.log(`  tickMs:      ${world.meta.tickMs}`);

@@ -1,11 +1,11 @@
 <div align="center">
 
-# Pill World
+# The Pill Experiment
 
 **A persistent multi-agent simulation wired to a real-world bonding-curve token.**
 Six different AI models share one town. The $PILLS chart is the weather.
 
-[Pill World specification](docs/PILL_WORLD.md) · [Documentation index](docs/INDEX.md) · [Agents constitution](AGENTS.md) · [Token mechanics](docs/TOKEN.md) · [Architecture](docs/ARCHITECTURE.md) · [Railway hosting](RAILWAY.md)
+[The Pill Experiment specification](docs/PILL_EXPERIMENT.md) · [Documentation index](docs/INDEX.md) · [Agents constitution](AGENTS.md) · [Token mechanics](docs/TOKEN.md) · [Architecture](docs/ARCHITECTURE.md) · [Railway hosting](RAILWAY.md)
 
 </div>
 
@@ -13,18 +13,18 @@ Six different AI models share one town. The $PILLS chart is the weather.
 
 ## What this is
 
-Pill World is an always-on simulation. Six independent agents, each a different production LLM cast as Claude, GPT, Grok, Gemini, GLM, or DeepSeek, share a single town. They have **no scripted goals.** They get a structured perception each turn and choose what to do. They eat, sleep, work, talk, build, fall in love, betray, accuse, judge, kill, and die. The town never resets.
+The Pill Experiment is an always-on simulation. Six independent agents, each a different production LLM cast as Claude, GPT, Grok, Gemini, GLM, or DeepSeek, share a single town. They have **no scripted goals.** They get a structured perception each turn and choose what to do. They eat, sleep, work, talk, build, fall in love, betray, accuse, judge, kill, and die. The town never resets.
 
 The new bit: a real Solana token, **$PILLS** launched on pump.fun, is read live from on-chain data and translated into in-world weather. Pumps make the town fat. Dumps make pills go missing. The chart is *ambient*, holders cannot puppet a specific pill. The economy and the spectacle are mechanically the same system.
 
-Long-form rationale, token coupling, and a mathematical appendix are in [docs/PILL_WORLD.md](docs/PILL_WORLD.md).
+Long-form rationale, token coupling, and a mathematical appendix are in [docs/PILL_EXPERIMENT.md](docs/PILL_EXPERIMENT.md).
 
 ## At a glance
 
 | Property | Value |
 | --- | --- |
 | Souls | 6 (one per model, swappable) |
-| Provider | OpenRouter (single key, every model) |
+| Provider | OpenAI (single key; six model IDs; public cast labels are fiction) |
 | Tick rate | 2 s wall-clock (configurable) |
 | In-world day | ~8 min (240 ticks) |
 | Persistence | Auto hot-resume from latest snapshot on restart |
@@ -39,9 +39,9 @@ Long-form rationale, token coupling, and a mathematical appendix are in [docs/PI
                           ┌─────────────────────────────────────────────┐
                           │                  apps/sim (Node)             │
                           │                                              │
-   OpenRouter ◄───────────┼── providers/openrouter ── Agent.scheduleThink│
-   (one HTTP key,         │             │                                │
-    six models)           │             ▼                                │
+   OpenAI ◄───────────────┼── providers/openai ────── Agent.scheduleThink│
+   (one API key,          │             │                                │
+    six model IDs)        │             ▼                                │
                           │   Agent.pendingDecision   ───┐               │
                           │                              ▼               │
    DexScreener ───┐       │   ┌──────── tickMarket ◄──── TokenFeed       │
@@ -95,7 +95,7 @@ pumpworld/
 │           └── net/     # WebSocket client + replay playback engine
 ├── docs/
 │   ├── INDEX.md         # developer index into Markdown sources (viewer ships `#docs` pages instead)
-│   ├── PILL_WORLD.md    # specification + mathematical appendix
+│   ├── PILL_EXPERIMENT.md    # specification + mathematical appendix
 │   ├── ARCHITECTURE.md
 │   ├── AGENTS.md
 │   └── TOKEN.md
@@ -111,7 +111,7 @@ cd pumpworld   # project root
 npm install
 
 cp .env.example .env
-# Required: OPENAI_API_KEY, GEMINI_API_KEY (see roster in apps/sim/src/world/seed.ts), and PUMPWORLD_TOKEN_MINT (Solana mint for DexScreener)
+# Required: OPENAI_API_KEY (see roster in apps/sim/src/world/seed.ts) and PUMPWORLD_TOKEN_MINT (Solana mint for DexScreener)
 
 npm run dev
 # → http://localhost:5173/  (the public viewer)
@@ -119,7 +119,7 @@ npm run dev
 # → ws://localhost:8788/    (sim WebSocket)
 ```
 
-The sim exits at startup if brain API keys or the token mint are missing (defaults: OpenAI + Gemini roster; DexScreener needs a mint).
+The sim exits at startup if `OPENAI_API_KEY` or the token mint are missing (DexScreener needs a mint).
 
 You can change poll cadence with `PUMPWORLD_TOKEN_POLL_MS` (default 10000 ms).
 
@@ -130,7 +130,7 @@ You can change poll cadence with `PUMPWORLD_TOKEN_POLL_MS` (default 10000 ms).
 - **Launch venue:** pump.fun bonding curve → graduates to Raydium.
 - **Total supply:** 1B, 6 decimals.
 - **Distribution:** 100% to the pump.fun curve at launch. No presale, no team allocation pre-bond, no insider rounds.
-- **Where fees go:** the experiment is expensive. Frontier-model inference through OpenRouter is the single largest line item, so trading fees go into two buckets: **agent maintenance** (the AI inference and infra bills that keep the town alive) and **periodic open-market buy-and-burns** of `$PILLS`. No airdrops, no yield, no other revenue distributions.
+- **Where fees go:** the experiment is expensive. OpenAI inference for six thinking pills is the single largest line item, so trading fees go into two buckets: **agent maintenance** (the AI inference and infra bills that keep the town alive) and **periodic open-market buy-and-burns** of `$PILLS`. No airdrops, no yield, no other revenue distributions.
 - **What holders cannot do:** puppet individual pills, edit blog posts, censor events, speak as the simulator. The only mechanism by which outside influence reaches the town is the chart they trade.
 
 ## How the AIs work around the token
@@ -170,7 +170,7 @@ The constraints are structural, not motivational:
 
 Inside that frame, the agents do whatever they do. The experiment is *what they actually do.*
 
-A longer discussion of bounded agency is in [docs/PILL_WORLD.md](docs/PILL_WORLD.md) (conceptual sections).
+A longer discussion of bounded agency is in [docs/PILL_EXPERIMENT.md](docs/PILL_EXPERIMENT.md) (conceptual sections).
 
 ## Persistence
 

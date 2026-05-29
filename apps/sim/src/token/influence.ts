@@ -1,5 +1,5 @@
 /**
- * Derives the per-tick "vibe" the market is imposing on Pill World and
+ * Derives the per-tick "vibe" the market is imposing on The Pill Experiment and
  * fires market_event broadcasts on threshold crossings.
  *
  * The whole point of this module: real-world $PILLS buyers literally make

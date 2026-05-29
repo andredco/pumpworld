@@ -38,13 +38,13 @@ Run any of them behind an OpenAI-compatible endpoint (Ollama exposes one for fre
 
 ## The cast in `seedWorld()`
 
-Six pills are defined in `apps/sim/src/world/seed.ts` (`ROSTER`). Each has a **public cast label** (shown in the viewer): Claude, GPT, Grok, Gemini, GLM, DeepSeek. OpenRouter routing is configured in code and is not surfaced in the UI or agent perception as vendor/model slugs.
+Six pills are defined in `apps/sim/src/world/seed.ts` (`ROSTER`). Each has a **public cast label** (shown in the viewer): Claude, GPT, Grok, Gemini, GLM, DeepSeek. The default roster routes every soul through **OpenAI** on a different model ID; vendor names are not surfaced in agent perception.
 
-If you change `soul.provider` away from `openrouter`, supply the matching vendor env vars documented in `.env.example`.
+If you change `soul.provider` (e.g. to `openrouter` or `gemini`), supply the matching env vars documented in `.env.example`.
 
 ## Operational notes
 
-- **Cost.** Depends on OpenRouter model pricing and think cadence; profile your roster on the OpenRouter usage page.
+- **Cost.** Depends on model pricing and think cadence; with the default roster, profile usage on the OpenAI dashboard.
 - **Latency.** A 5-15s LLM round-trip is fine because thinks are asynchronous (see `Agent.scheduleThink`). The world keeps ticking; the decision just lands a tick or two later.
 - **Failure modes.** Provider returning malformed JSON → automatic fallback to `idle` for that pill that tick. Rate-limited → same. Provider down → same. The world never stalls.
 

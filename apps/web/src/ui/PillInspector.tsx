@@ -55,9 +55,9 @@ export function PillInspector() {
     <div style={{
       position: "absolute", left: 16, bottom: 84,
       width: 290,
-      background: "rgba(7,9,12,0.92)",
-      border: `1px solid ${pill.shell.topColor}`,
-      borderRadius: 12,
+      background: "var(--pw-card)",
+      border: `1px solid ${pill.shell.topColor}55`,
+      borderRadius: "var(--pw-radius-md)",
       color: "var(--pw-text)",
       padding: 14,
       fontSize: 12,
@@ -65,7 +65,7 @@ export function PillInspector() {
       WebkitBackdropFilter: "blur(14px)",
       maxHeight: "min(70vh, 540px)",
       overflowY: "auto",
-      boxShadow: "0 14px 40px rgba(0,0,0,0.5)",
+      boxShadow: "var(--pw-shadow-md)",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>

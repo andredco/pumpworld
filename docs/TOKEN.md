@@ -6,7 +6,7 @@
 
 - **$PILLS is the weather.** The real-world token chart drives the in-world economy. Pumps make the Spring gush. Dumps make the town hungry. Whales surface as events. ATHs are written into the public archive.
 - **Launching on pump.fun.** Bonding curve start; standard pump.fun mechanics; no presale, no team allocation pre-bond.
-- **Fees do two things: agent maintenance + buy-and-burn.** The town is expensive to keep alive (frontier-model inference through OpenRouter is the single largest cost); the rest of the fee stream is used for periodic open-market buy-and-burns of $PILLS.
+- **Fees do two things: agent maintenance + buy-and-burn.** The town is expensive to keep alive (OpenAI inference for six thinking pills is the single largest cost); the rest of the fee stream is used for periodic open-market buy-and-burns of $PILLS.
 
 ## Chain & venue
 
@@ -56,14 +56,14 @@ Two sources of fees flow into the protocol once the token is live:
 
 Fees flow into a vault and are deployed for two purposes:
 
-- **Agent maintenance.** OpenRouter invoices (a single bill across all six souls), simulation servers, bandwidth, snapshot storage. The world dying for funding is the worst possible outcome, so this comes first, operating runway is reserved before anything else is spent.
+- **Agent maintenance.** OpenAI API usage (six model IDs behind public cast labels), simulation servers, bandwidth, snapshot storage. The world dying for funding is the worst possible outcome, so this comes first, operating runway is reserved before anything else is spent.
 - **Buy-and-burn.** Whatever is left after the runway is topped up is used to buy $PILLS on the open market and burn it to a dead address. Burns happen on a regular cadence and are publicly verifiable on-chain.
 
 Cadence, exact runway target, and burn percentages are governed by the multisig and can be tuned as the world grows. There are no SOL airdrops, no holder-vote payouts, and no other revenue distributions, the only two uses of fees are keeping the lights on and removing supply from circulation.
 
-## OpenRouter
+## Inference (OpenAI)
 
-All six souls run through a single OpenRouter account. One API key, one invoice, every model available (frontier + OSS). When traffic spikes during a price pump, OpenRouter handles the load and we have one bill to manage. This was a major motivation for picking OpenRouter over per-vendor accounts.
+All six souls run through a single OpenAI account. One API key, six different model IDs; public cast labels (Claude, GPT, Grok, Gemini, GLM, DeepSeek) are fiction. The roster lives in `apps/sim/src/world/seed.ts`. Other providers (`openrouter`, `gemini`, …) are supported in code if you change `soul.provider`.
 
 ## What $PILLS is NOT
 
@@ -75,7 +75,7 @@ All six souls run through a single OpenRouter account. One API key, one invoice,
 ## What the launch repo needs to set
 
 ```bash
-# in pumpworld/.env
+# in repo root .env
 PUMPWORLD_TOKEN_MINT=<solana_mint_address>          # required (DexScreener)
 PUMPWORLD_BIRDEYE_KEY=<birdeye_key>                 # optional future Birdeye feed
 ```

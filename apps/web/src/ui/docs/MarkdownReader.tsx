@@ -13,7 +13,7 @@ import {
 } from "./docTheme.js";
 
 const INTERNAL_MD: Record<string, string> = {
-  "PILL_WORLD.md": "#docs/spec",
+  "PILL_EXPERIMENT.md": "#docs/spec",
   "ARCHITECTURE.md": "#docs/architecture",
   "AGENTS.md": "#docs/agents",
 };
@@ -86,7 +86,7 @@ function markdownComponents(): Components {
       <p style={{
         margin: "0.65rem 0",
         lineHeight: 1.65,
-        color: "#c9cfd6",
+        color: "var(--pw-text-dim)",
         fontSize: 15,
       }}>{children}</p>
     ),
@@ -104,7 +104,7 @@ function markdownComponents(): Components {
         margin: "1rem 0",
         padding: "10px 16px",
         borderLeft: `3px solid ${DOC_PG}`,
-        background: "rgba(0,255,163,0.06)",
+        background: "var(--pw-accent-muted)",
         color: "#dde3ea",
       }}>{children}</blockquote>
     ),
@@ -160,7 +160,7 @@ function markdownComponents(): Components {
           borderCollapse: "collapse",
           width: "100%",
           fontSize: 14,
-          color: "#c9cfd6",
+          color: "var(--pw-text-dim)",
         }}>{children}</table>
       </div>
     ),

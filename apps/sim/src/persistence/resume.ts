@@ -5,7 +5,7 @@
  * matches the current world seed. If one exists and has a snapshot, hydrate
  * the World from that snapshot so the town continues from where it left off.
  *
- * This is what makes Pill World a *persistent* server — restarts (deploys,
+ * This is what makes The Pill Experiment a *persistent* server — restarts (deploys,
  * crashes, container restarts) don't reset the town. The world picks up at
  * the last snapshot's tick and keeps going.
  *

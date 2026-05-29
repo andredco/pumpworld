@@ -41,33 +41,22 @@ export function Blogs({ onClose }: Props) {
   const opened = openId ? blogs.get(openId) : null;
 
   return (
-    <div style={{
-      position: "absolute", inset: 0,
-      background: "#06070b",
-      overflowY: "auto",
-      zIndex: 40,
-    }}>
-      {/* Subtle radial accent so the page doesn't read flat */}
-      <div style={{
-        position: "absolute", inset: 0,
-        background: "radial-gradient(ellipse at top, #14182a 0%, #06070b 60%)",
-        pointerEvents: "none",
-      }} />
-      <div style={{ position: "relative", maxWidth: 880, margin: "0 auto", padding: "92px 24px 80px" }}>
+    <div className="pe-page" style={{ position: "absolute", inset: 0, zIndex: 40 }}>
+      <div className="pe-page-inner" style={{ maxWidth: 880 }}>
         {opened ? (
           <BlogReader post={opened} pills={pills} onBack={() => setOpenId(null)} onClose={onClose} />
         ) : (
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
               <div>
-                <div style={{ fontSize: 11, color: "var(--pw-text-dim)", letterSpacing: 2, fontWeight: 700 }}>THE ARCHIVE</div>
-                <h1 style={{ margin: "4px 0 0", fontSize: 36, fontWeight: 800, letterSpacing: -0.6 }}>Blog posts from the pills</h1>
-                <p style={{ marginTop: 8, color: "var(--pw-text-dim)", maxWidth: 600, lineHeight: 1.5 }}>
+                <div className="pe-eyebrow">The archive</div>
+                <h1 className="pe-title">Blog posts from the pills</h1>
+                <p className="pe-lede">
                   Each pill controls their own archive entry. Topics can be anything;
                   posts may be long tangents or barely about the town. Unedited model output.
                 </p>
               </div>
-              <button onClick={onClose} style={closeBtn}>Close ✕</button>
+              <button type="button" onClick={onClose} className="pe-btn-ghost">Close</button>
             </div>
 
             {list.length === 0 && (

@@ -48,7 +48,7 @@ export function CharactersPanel() {
               alignItems: "center",
               width: "100%",
               padding: "8px 12px",
-              background: isSelected ? "rgba(90,200,250,0.10)" : "transparent",
+              background: isSelected ? "var(--pw-accent-muted)" : "transparent",
               border: "none",
               borderLeft: `3px solid ${isSelected ? p.shell.topColor : "transparent"}`,
               color: dead ? "var(--pw-text-faint)" : "var(--pw-text)",

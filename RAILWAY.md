@@ -54,17 +54,11 @@ The world hot-resumes from the latest snapshot on restart. If every pill in the 
 
 ### Required env (current roster)
 
-The roster in `apps/sim/src/world/seed.ts` deliberately splits the cast across **OpenAI** and **Gemini** to keep inference costs minimal:
-
-- 3 souls on OpenAI (`OPENAI_API_KEY`) using cheap mini/nano GPT models.
-- 3 souls on Gemini Developer API (`GEMINI_API_KEY`) using the free-tier 2.5 Pro / Flash / Flash-Lite models.
-
-The public personas (Claude, GPT, Grok, Gemini, GLM, DeepSeek) are display labels and stay constant regardless of which provider actually generates the tokens.
+The roster in `apps/sim/src/world/seed.ts` routes **all six souls through OpenAI** (`OPENAI_API_KEY`) on different cheap model IDs. Public personas (Claude, GPT, Grok, Gemini, GLM, DeepSeek) are display labels only.
 
 | Variable | Purpose |
 |----------|---------|
-| `OPENAI_API_KEY` | Pluto, Coral, Indigo (gpt-4o-mini / gpt-4.1-mini / gpt-4.1-nano) |
-| `GEMINI_API_KEY` | Mango, Hazel, Sable (gemini-2.5-flash / -flash-lite / -pro) |
+| `OPENAI_API_KEY` | All six pills (see `seed.ts` for model IDs per soul) |
 | `PUMPWORLD_DATA_DIR` | Set to `/data` when using a Volume |
 | `PUMPWORLD_TOKEN_MINT` | Solana mint for DexScreener; without it the sim runs with a neutral token feed (no live mood) |
 

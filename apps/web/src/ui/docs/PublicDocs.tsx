@@ -2,7 +2,8 @@
 // mirrored into ./content/ by `apps/web/scripts/sync-docs.mjs` (run from
 // `prebuild`) so the web build is self-contained — works under Railpack,
 // Dockerfile.web, and local dev without escaping the package.
-import pillWorldSource from "./content/PILL_WORLD.md?raw";
+import specSource from "./content/PILL_EXPERIMENT.md?raw";
+import { BRAND_NAME } from "../../brand.js";
 import architectureSource from "./content/ARCHITECTURE.md?raw";
 import agentsSource from "./content/AGENTS.md?raw";
 import { MarkdownReader } from "./MarkdownReader.js";
@@ -49,20 +50,20 @@ const btnGhost = {
 
 const cardStyle = {
   display: "block",
-  padding: "22px 22px",
-  borderRadius: 14,
+  padding: "20px 22px",
+  borderRadius: "var(--pw-radius-md)",
   border: `1px solid ${DOC_PBORDER}`,
-  background: "#0a0d10",
+  background: "var(--pw-card)",
   textDecoration: "none",
   color: DOC_PTEXT,
-  transition: "border-color 0.15s ease",
+  transition: "border-color 0.15s ease, background 0.15s ease",
 } as const;
 
 export function PublicDocs({ route, onBack }: Props) {
   const key = publicDocsRouteFromHash(route);
   const title = (
     <span style={{ fontFamily: "var(--pw-mono, monospace)", fontWeight: 800, fontSize: 13 }}>
-      Pill World docs
+      {BRAND_NAME} docs
     </span>
   );
 
@@ -89,10 +90,9 @@ export function PublicDocs({ route, onBack }: Props) {
   );
 
   return (
-    <div style={{
+    <div className="pe-page" style={{
       position: "absolute",
       inset: 0,
-      background: DOC_PBG,
       color: DOC_PTEXT,
       overflowY: "auto",
       fontFamily: "inherit",
@@ -106,7 +106,7 @@ export function PublicDocs({ route, onBack }: Props) {
               Documentation
             </h1>
             <p style={{ maxWidth: 640, color: DOC_PDIM, fontSize: 16, lineHeight: 1.55, marginBottom: 36 }}>
-              Readable references for how Pill World works. Ops runbooks, API keys, and{' '}
+              Readable references for how The Pill Experiment works. Ops runbooks, API keys, and{' '}
               <strong style={{ color: DOC_PTEXT }}>.env</strong> layouts stay private — nothing here is copy-paste
               infrastructure.
             </p>
@@ -149,11 +149,11 @@ export function PublicDocs({ route, onBack }: Props) {
 
         {key === "docs/spec" && (
           <>
-            <h1 style={{ fontSize: 28, fontWeight: 800, margin: "0 0 8px" }}>Pill World specification</h1>
+            <h1 style={{ fontSize: 28, fontWeight: 800, margin: "0 0 8px" }}>{BRAND_NAME} specification</h1>
             <p style={{ color: DOC_PDIM, marginBottom: 28, fontSize: 14 }}>
               Canonical technical description + mathematical appendix.
             </p>
-            <MarkdownReader markdown={pillWorldSource} />
+            <MarkdownReader markdown={specSource} />
           </>
         )}
 

@@ -49,8 +49,8 @@ export function CameraSwitcher() {
   };
   const btn = (active: boolean, disabled = false): React.CSSProperties => ({
     padding: "8px 14px",
-    background: active ? "rgba(90,200,250,0.16)" : "transparent",
-    border: "1px solid " + (active ? "rgba(90,200,250,0.4)" : "transparent"),
+    background: active ? "var(--pw-accent-muted)" : "transparent",
+    border: "1px solid " + (active ? "var(--pw-accent-line)" : "transparent"),
     color: disabled ? "var(--pw-text-faint)" : active ? "var(--pw-text)" : "var(--pw-text-dim)",
     borderRadius: 8,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -96,7 +96,7 @@ export function CameraSwitcher() {
                     setCamera("follow", p.id);
                     setOpen(false);
                   }}
-                  style={{ ...dropItem, background: isCurrent ? "rgba(90,200,250,0.10)" : "transparent" }}
+                  style={{ ...dropItem, background: isCurrent ? "var(--pw-accent-muted)" : "transparent" }}
                   onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
                   onMouseLeave={e => { if (!isCurrent) e.currentTarget.style.background = "transparent"; }}
                 >

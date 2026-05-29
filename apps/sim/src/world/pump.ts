@@ -1,5 +1,5 @@
 /**
- * The Spring. The sacred fountain at the centre of Pill World drips $PILLS
+ * The Spring. The sacred fountain at the centre of The Pill Experiment drips $PILLS
  * shards once per in-world hour, plus a larger "tide" at noon. Pills compete
  * to collect them; in-world currency is literally $PILLS.
  *
