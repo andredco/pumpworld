@@ -61,11 +61,19 @@ function build(p: ModelProvider, model: string): BrainProvider {
     case "openai": {
       const key = config.openai.apiKey?.trim();
       if (!key) {
+        // Diagnostic: list env var NAMES (never values) that look key-ish, so
+        // remote deploy logs reveal typos like "OPENAI_API_KEY " or wrong service.
+        const candidates = Object.keys(process.env)
+          .filter(k => /openai|api[_-]?key/i.test(k))
+          .map(k => JSON.stringify(k));
         throw new Error(
           "OPENAI_API_KEY is required for souls configured with provider openai. "
           + "Local: put it in .env at the repo root. "
           + "Railway/Docker: .env is not shipped — add OPENAI_API_KEY as a service variable "
-          + "on the SIM service (Variables tab) and redeploy.",
+          + "on the SIM service (Variables tab) and APPLY/DEPLOY the staged change. "
+          + (candidates.length
+            ? `Key-like env names visible in this container: ${candidates.join(", ")}`
+            : "No key-like env names are visible in this container at all."),
         );
       }
       return new OpenAICompatibleProvider("openai", model, "https://api.openai.com/v1", key);
