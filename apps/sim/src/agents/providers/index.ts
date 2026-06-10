@@ -62,7 +62,10 @@ function build(p: ModelProvider, model: string): BrainProvider {
       const key = config.openai.apiKey?.trim();
       if (!key) {
         throw new Error(
-          "OPENAI_API_KEY or openai_api_key is required for souls configured with provider openai.",
+          "OPENAI_API_KEY is required for souls configured with provider openai. "
+          + "Local: put it in .env at the repo root. "
+          + "Railway/Docker: .env is not shipped — add OPENAI_API_KEY as a service variable "
+          + "on the SIM service (Variables tab) and redeploy.",
         );
       }
       return new OpenAICompatibleProvider("openai", model, "https://api.openai.com/v1", key);

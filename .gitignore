@@ -11,6 +11,14 @@ coverage/
 .env.*
 !.env.example
 
+# Wallet keypairs (vanity-grind / keygen output) — never commit
+wallets/
+/*.json
+!/package.json
+!/package-lock.json
+!/railway*.json
+!/tsconfig*.json
+
 # Logs
 *.log
 npm-debug.log*

@@ -6,8 +6,11 @@
  * worker to find a hit wins; main thread saves a `solana-keygen`-compatible
  * JSON keypair (64-byte secretKey array — that's the standard format).
  *
- * Usage: node scripts/vanity-grind.mjs <suffix>
+ * Usage:
+ *   node scripts/vanity-grind.mjs <suffix>            (match end of address)
+ *   node scripts/vanity-grind.mjs --prefix <prefix>   (match start of address)
  *   e.g. node scripts/vanity-grind.mjs P1LL
+ *        node scripts/vanity-grind.mjs --prefix Six
  *
  * Output:
  *   <address>.json next to the script. Treat it like a password — that file
@@ -41,12 +44,14 @@ function base58Encode(bytes) {
 }
 
 if (isMainThread) {
-  const suffix = process.argv[2];
-  if (!suffix) {
-    console.error("usage: node scripts/vanity-grind.mjs <suffix>");
+  const args = process.argv.slice(2);
+  const isPrefix = args[0] === "--prefix";
+  const pattern = isPrefix ? args[1] : args[0];
+  if (!pattern) {
+    console.error("usage: node scripts/vanity-grind.mjs [--prefix] <pattern>");
     process.exit(1);
   }
-  for (const ch of suffix) {
+  for (const ch of pattern) {
     if (!ALPHABET.has(ch)) {
       console.error(`'${ch}' is not in Solana's base58 alphabet — pick another character.`);
       console.error(`Allowed chars: ${BASE58}`);
@@ -55,7 +60,7 @@ if (isMainThread) {
   }
 
   const cores = Math.max(1, cpus().length - 1); // leave one core for OS
-  console.log(`grinding for suffix "${suffix}" across ${cores} workers…`);
+  console.log(`grinding for ${isPrefix ? "prefix" : "suffix"} "${pattern}" across ${cores} workers…`);
   const startedMs = Date.now();
   let totalAttempts = 0;
   let solved = false;
@@ -71,7 +76,7 @@ if (isMainThread) {
   const here = fileURLToPath(import.meta.url);
   const workers = [];
   for (let i = 0; i < cores; i++) {
-    const w = new Worker(here, { workerData: { suffix } });
+    const w = new Worker(here, { workerData: { pattern, isPrefix } });
     w.on("message", msg => {
       if (msg.type === "stats") {
         totalAttempts += msg.batch;
@@ -98,14 +103,14 @@ if (isMainThread) {
     workers.push(w);
   }
 } else {
-  const { suffix } = workerData;
+  const { pattern, isPrefix } = workerData;
   const REPORT_EVERY = 5000;
   let n = 0;
   let done = false;
   while (!done) {
     const kp = nacl.sign.keyPair();
     const addr = base58Encode(kp.publicKey);
-    if (addr.endsWith(suffix)) {
+    if (isPrefix ? addr.startsWith(pattern) : addr.endsWith(pattern)) {
       parentPort.postMessage({
         type: "hit",
         address: addr,
