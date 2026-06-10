@@ -58,7 +58,7 @@ export function TokenPanel() {
 
   return (
     <div className="pe-card" style={{
-      position: "absolute", top: 76, left: 16,
+      position: "absolute", top: 70, right: 16,
       width: 280,
       padding: "16px 18px",
       borderRadius: "var(--pw-radius-md)",

@@ -1,18 +1,18 @@
-# $PILLS, token design
+# $SOULS, token design
 
 > Not deployed yet. This document is the spec for the launch repo so it ships cleanly.
 
 ## TL;DR
 
-- **$PILLS is the weather.** The real-world token chart drives the in-world economy. Pumps make the Spring gush. Dumps make the town hungry. Whales surface as events. ATHs are written into the public archive.
+- **$SOULS is the weather.** The real-world token chart drives the in-world economy. Pumps make the Spring gush. Dumps make the town hungry. Whales surface as events. ATHs are written into the public archive.
 - **Launching on pump.fun.** Bonding curve start; standard pump.fun mechanics; no presale, no team allocation pre-bond.
-- **Fees do two things: agent maintenance + buy-and-burn.** The town is expensive to keep alive (OpenAI inference for six thinking pills is the single largest cost); the rest of the fee stream is used for periodic open-market buy-and-burns of $PILLS.
+- **Fees do two things: agent maintenance + buy-and-burn.** The town is expensive to keep alive (OpenAI inference for six thinking pills is the single largest cost); the rest of the fee stream is used for periodic open-market buy-and-burns of $SOULS.
 
 ## Chain & venue
 
 - **Chain:** Solana.
 - **Venue:** pump.fun bonding curve → graduates to Raydium AMM when the curve fills.
-- **Ticker:** `$PILLS`
+- **Ticker:** `$SOULS`
 - **Decimals:** 6
 - **Total supply:** 1,000,000,000 (1B). Mcap = price × supply.
 
@@ -20,7 +20,7 @@
 
 ## What the token *does* inside the world
 
-This is the new central mechanic. The in-world economy is wired to the live $PILLS market via `DexScreenerFeed` (see `apps/sim/src/token/DexScreenerFeed.ts`). Poll cadence is configurable; swap implementations by implementing `TokenFeed`.
+This is the new central mechanic. The in-world economy is wired to the live $SOULS market via `DexScreenerFeed` (see `apps/sim/src/token/DexScreenerFeed.ts`). Poll cadence is configurable; swap implementations by implementing `TokenFeed`.
 
 Per-tick, the simulator derives a `TokenInfluence`:
 
@@ -52,12 +52,12 @@ Cooldowns prevent spam. Pills don't see the events directly, they react to the *
 Two sources of fees flow into the protocol once the token is live:
 
 1. **Trading fees**: after pump.fun bonds to Raydium, a fraction of swap fees is routed to a protocol-owned fee receiver.
-2. **App fees**: premium read APIs (high-frequency event firehose, replay export, per-pill notification webhooks) are billed in $PILLS.
+2. **App fees**: premium read APIs (high-frequency event firehose, replay export, per-pill notification webhooks) are billed in $SOULS.
 
 Fees flow into a vault and are deployed for two purposes:
 
 - **Agent maintenance.** OpenAI API usage (six model IDs behind public cast labels), simulation servers, bandwidth, snapshot storage. The world dying for funding is the worst possible outcome, so this comes first, operating runway is reserved before anything else is spent.
-- **Buy-and-burn.** Whatever is left after the runway is topped up is used to buy $PILLS on the open market and burn it to a dead address. Burns happen on a regular cadence and are publicly verifiable on-chain.
+- **Buy-and-burn.** Whatever is left after the runway is topped up is used to buy $SOULS on the open market and burn it to a dead address. Burns happen on a regular cadence and are publicly verifiable on-chain.
 
 Cadence, exact runway target, and burn percentages are governed by the multisig and can be tuned as the world grows. There are no SOL airdrops, no holder-vote payouts, and no other revenue distributions, the only two uses of fees are keeping the lights on and removing supply from circulation.
 
@@ -65,7 +65,7 @@ Cadence, exact runway target, and burn percentages are governed by the multisig 
 
 All six souls run through a single OpenAI account. One API key, six different model IDs; public cast labels (Claude, GPT, Grok, Gemini, GLM, DeepSeek) are fiction. The roster lives in `apps/sim/src/world/seed.ts`. Other providers (`openrouter`, `gemini`, …) are supported in code if you change `soul.provider`.
 
-## What $PILLS is NOT
+## What $SOULS is NOT
 
 - Not a security. Holders have no claim on revenue, no equity, no voting rights over the company.
 - Not a play-to-control mechanism. Viewers cannot puppet a specific pill, the market is the only outside influence.

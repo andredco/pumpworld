@@ -1,5 +1,6 @@
 import type { WorldEvent } from "@pumpworld/protocol";
 import { useWorld } from "../store/worldStore.js";
+import { TOKEN } from "./token.js";
 
 /** Events we hide from the public ticker. */
 const NOISE = new Set<WorldEvent["kind"]>([
@@ -38,8 +39,8 @@ function describe(ev: WorldEvent, nameOf: (id: string) => string): Line | null {
     case "building_completed":return { icon: "⌂", text: `a building was completed`, tone: "good" };
     case "building_burning":  return { icon: "🔥", text: `a building is on fire`, tone: "bad" };
     case "building_destroyed":return { icon: "✕", text: `a building collapsed`, tone: "bad" };
-    case "pump_dripped":      return { icon: "✦", text: `Spring dripped +${ev.amount} $PILLS`, tone: "money" };
-    case "pump_tide":         return { icon: "✺", text: `TIDE: ${ev.amount} $PILLS poured`, tone: "money" };
+    case "pump_dripped":      return { icon: "✦", text: `Spring dripped +${ev.amount} ${TOKEN.symbol}`, tone: "money" };
+    case "pump_tide":         return { icon: "✺", text: `TIDE: ${ev.amount} ${TOKEN.symbol} poured`, tone: "money" };
     case "pill_executed":     return { icon: "☠", text: `${nameOf(ev.pillId)} executed`, tone: "bad" };
     case "blog_published":    return { icon: "✎", text: `${nameOf(ev.authorPillId)} published "${ev.title.slice(0, 40)}"`, tone: "info" };
     case "market_event": {

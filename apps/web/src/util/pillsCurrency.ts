@@ -1,5 +1,5 @@
-/** In-world currency is $PILLS; older snapshots used "$pump" in item names. */
+/** In-world currency is $SOULS; older snapshots used "$pills" or "$pump" in item names. */
 export function isPillsCurrencyName(name: string): boolean {
   const n = name.toLowerCase();
-  return n.startsWith("$pills") || n.startsWith("$pump");
+  return n.startsWith("$souls") || n.startsWith("$pills") || n.startsWith("$pump");
 }

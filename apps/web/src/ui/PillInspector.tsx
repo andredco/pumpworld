@@ -1,5 +1,6 @@
 import { useWorld } from "../store/worldStore.js";
 import { isPillsCurrencyName } from "../util/pillsCurrency.js";
+import { TOKEN } from "./token.js";
 // useWorld.getState() lets us peek without subscribing for an enable/disable check
 
 const STAT_COLOR = (v: number) =>
@@ -53,8 +54,9 @@ export function PillInspector() {
 
   return (
     <div style={{
-      position: "absolute", left: 16, bottom: 84,
+      position: "absolute", right: 16, bottom: 76,
       width: 290,
+      zIndex: 40,
       background: "var(--pw-card)",
       border: `1px solid ${pill.shell.topColor}55`,
       borderRadius: "var(--pw-radius-md)",
@@ -97,7 +99,7 @@ export function PillInspector() {
         <span style={{ fontStyle: "italic", color: "var(--pw-text-dim)" }}>{pill.currentTask || "(none)"}</span>
         <span style={{ color: "var(--pw-text-faint)", fontSize: 10, textTransform: "uppercase", letterSpacing: 1.2 }}>WEAPON</span>
         <span>{hasWeapon ? <b style={{ color: "var(--pw-bad)" }}>● armed</b> : <span style={{ color: "var(--pw-text-faint)" }}>unarmed</span>}</span>
-        <span style={{ color: "var(--pw-text-faint)", fontSize: 10, textTransform: "uppercase", letterSpacing: 1.2 }}>$PILLS</span>
+        <span style={{ color: "var(--pw-text-faint)", fontSize: 10, textTransform: "uppercase", letterSpacing: 1.2 }}>{TOKEN.symbol}</span>
         <span className="pw-mono" style={{ color: "var(--pw-gold)", fontWeight: 700 }}>{pillsInPocket}</span>
         <span style={{ color: "var(--pw-text-faint)", fontSize: 10, textTransform: "uppercase", letterSpacing: 1.2 }}>STATUS</span>
         <span>

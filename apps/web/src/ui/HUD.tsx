@@ -25,8 +25,8 @@ function partOfDay(h: number): string {
 }
 
 /**
- * Compact world-clock strip. Lives at the bottom-centre above the dialogue
- * strip, so it doesn't fight the TokenPanel for left-side real estate.
+ * Compact world-clock strip pinned to the bottom-centre of the viewport,
+ * beneath the dialogue strip — cinematic "broadcast clock" placement.
  */
 export function HUD() {
   const meta = useWorld(s => s.meta);
@@ -47,13 +47,9 @@ export function HUD() {
   return (
     <div style={{
       position: "absolute",
-      top: 16, left: "50%", transform: "translateX(calc(-50% + 0px))",
-      // sits beside the centred TopNav: we offset by the navbar's right edge
-      // so we end up just to the right of it. Computed via flex layout in the
-      // wrapper below; here we just leave room.
+      bottom: 16, left: "50%", transform: "translateX(-50%)",
       pointerEvents: "none",
       display: "flex", justifyContent: "center",
-      paddingTop: 70, // sits BELOW the centred nav pill
     }}>
       <div style={{
         display: "flex", alignItems: "center", gap: 14,
@@ -71,11 +67,11 @@ export function HUD() {
         <span style={{
           padding: "2px 8px", fontSize: 9, fontWeight: 800, letterSpacing: 1.4,
           borderRadius: 99,
-          background: connected ? "var(--pw-accent-muted)" : "rgba(248, 113, 113, 0.12)",
-          color: connected ? "var(--pw-good)" : "var(--pw-bad)",
-          border: `1px solid ${connected ? "rgba(74, 222, 128, 0.25)" : "rgba(248, 113, 113, 0.25)"}`,
+          background: connected ? "var(--pw-accent-muted)" : "rgba(245, 192, 68, 0.10)",
+          color: connected ? "var(--pw-good)" : "#f5c044",
+          border: `1px solid ${connected ? "rgba(74, 222, 128, 0.25)" : "rgba(245, 192, 68, 0.25)"}`,
         }}>
-          {connected ? "● LIVE" : "OFFLINE"}
+          {connected ? "● LIVE" : "STANDBY"}
         </span>
 
         <Sep />

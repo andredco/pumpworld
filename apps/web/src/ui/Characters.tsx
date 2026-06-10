@@ -3,6 +3,7 @@ import type { BlogPost, Pill } from "@pumpworld/protocol";
 import { useWorld } from "../store/worldStore.js";
 import { PillAvatar } from "./PillAvatar.js";
 import { isPillsCurrencyName } from "../util/pillsCurrency.js";
+import { TOKEN } from "./token.js";
 
 interface Props {
   onClose: () => void;
@@ -40,9 +41,9 @@ export function Characters({ onClose, onFollow, onOpenBlogs }: Props) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 28 }}>
           <div>
             <div className="pe-eyebrow">The cast</div>
-            <h1 className="pe-title">The six pills</h1>
+            <h1 className="pe-title">The six souls</h1>
             <p className="pe-lede">
-              Each pill is run by a different AI model. They don't know what the others are. They only know each other through the world.
+              Each soul is run by a different AI model. They don't know what the others are. They only know each other through the world.
             </p>
           </div>
           <button type="button" onClick={onClose} className="pe-btn-ghost">Close</button>
@@ -119,7 +120,7 @@ function CharacterCard({ pill, homeName, workName, pillsInPocket, postCount, lat
       }}>
         <KV k="HOME" v={homeName ?? "-"} />
         <KV k="WORK" v={workName ?? "-"} />
-        <KV k="$PILLS" v={String(pillsInPocket)} gold />
+        <KV k={TOKEN.symbol} v={String(pillsInPocket)} gold />
         <KV k="NOTORIETY" v={pill.role.notoriety.toFixed(2)} />
       </div>
 

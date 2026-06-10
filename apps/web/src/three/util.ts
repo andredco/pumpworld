@@ -24,42 +24,65 @@ export function mulberry32(seed: number): () => number {
   };
 }
 
-/** Pick a saturated accent colour for a building from its id. */
+/**
+ * Specimen-dish palette: graphite / porcelain bodies, one neon accent per
+ * building kind. The accent drives roof tint, trim glow, and door frame.
+ */
 export function accentForBuilding(id: string, kind: string): string {
   const palette: Record<string, string[]> = {
-    house: ["#f6a6c1", "#a8d8ff", "#c8e6b8", "#ffe4a3", "#d4a3ff", "#ffb6a3", "#a8e6cf", "#fad2e1"],
-    shop: ["#ff9a76", "#fdd56a", "#c0e57b", "#a3d8f4", "#f7b2bd"],
-    tavern: ["#c4634d", "#a85432", "#d97757"],
-    temple: ["#f4ecd6", "#fff8e0", "#ffe9b3"],
-    courthouse: ["#7290b8", "#6e8aa8", "#5a7da3"],
-    town_hall: ["#d8cdb5", "#c9b894"],
-    gallows: ["#5a3a22"],
-    jail: ["#3f3f4f", "#494957", "#525266"],
-    farm: ["#cdbd6e", "#d8c879", "#bba858"],
-    workshop: ["#b08968", "#9b7855", "#c79972"],
-    monument: ["#e8c1a0", "#dfae8a", "#d49a73"],
-    ruin: ["#6a6a6a", "#7a7a7a", "#5e5e5e"],
+    house: ["#34343e", "#3a3744", "#2f3340", "#3c3340", "#33383b", "#3a3038"],
+    shop: ["#2e3440", "#343048", "#2c3a3e"],
+    tavern: ["#3e2e34", "#42303a"],
+    temple: ["#403c50", "#46405a"],
+    courthouse: ["#2b3344", "#2e3850"],
+    town_hall: ["#383848", "#3e3e52"],
+    gallows: ["#241d18"],
+    jail: ["#26262e", "#2a2a34"],
+    farm: ["#33392f", "#383e30"],
+    workshop: ["#3a332c", "#403830"],
+    monument: ["#3c3848", "#443e52"],
+    ruin: ["#2a2a2c", "#303032"],
   };
-  const arr = palette[kind] ?? ["#cccccc"];
+  const arr = palette[kind] ?? ["#33343c"];
   return arr[hashString(id) % arr.length]!;
 }
 
-/** Roof colour, slightly darker / warmer than wall. */
+/** Roof colour — desaturated slab tones, slightly lighter than walls. */
 export function roofForBuilding(id: string, kind: string): string {
   const palette: Record<string, string[]> = {
-    house: ["#cf5566", "#5a7fa8", "#7ca85c", "#c69b3e", "#8a5fc0", "#c46d50", "#5fb39b"],
-    shop: ["#a04a35", "#b88a2e", "#7ba33d", "#4d83a3", "#a85d6e"],
-    tavern: ["#5a2a1a", "#4b2010"],
-    temple: ["#d4a83b", "#c89a26"],
-    courthouse: ["#2a3a55", "#324466"],
-    town_hall: ["#7a5a2a", "#6a4a22"],
-    gallows: ["#3a2818"],
-    jail: ["#222230", "#2a2a3a"],
-    farm: ["#7a5a2a", "#6a4f24"],
-    workshop: ["#6a4a30", "#5a3e26"],
-    monument: ["#a06a4a", "#8a5a3e"],
-    ruin: ["#3a3a3a", "#444"],
+    house: ["#4c4658", "#445064", "#50445c", "#465a58", "#5a4a50"],
+    shop: ["#46506a", "#504668"],
+    tavern: ["#523a42", "#4a343c"],
+    temple: ["#5a5474", "#605a7e"],
+    courthouse: ["#3a455c", "#404e6a"],
+    town_hall: ["#4c4c66", "#525270"],
+    gallows: ["#2c241c"],
+    jail: ["#33333f", "#393945"],
+    farm: ["#48503c", "#4e5640"],
+    workshop: ["#4e443a", "#544a40"],
+    monument: ["#544c68", "#5c5472"],
+    ruin: ["#36363a", "#3c3c40"],
   };
-  const arr = palette[kind] ?? ["#444"];
+  const arr = palette[kind] ?? ["#46465a"];
   return arr[(hashString(id) >>> 7) % arr.length]!;
+}
+
+/** Neon trim per building kind — the glow that identifies it at night. */
+export function neonForBuilding(id: string, kind: string): string {
+  const palette: Record<string, string[]> = {
+    house: ["#a78bfa", "#38bdf8", "#f472b6", "#34d399", "#fbbf24", "#fb7185"],
+    shop: ["#fbbf24", "#f59e0b"],
+    tavern: ["#fb7185", "#f472b6"],
+    temple: ["#a78bfa", "#c4b5fd"],
+    courthouse: ["#38bdf8", "#7dd3fc"],
+    town_hall: ["#c4b5fd", "#a78bfa"],
+    gallows: ["#f87171"],
+    jail: ["#f87171", "#fb7185"],
+    farm: ["#34d399", "#4ade80"],
+    workshop: ["#fb923c", "#fbbf24"],
+    monument: ["#e9d5ff", "#c4b5fd"],
+    ruin: ["#52525b"],
+  };
+  const arr = palette[kind] ?? ["#a78bfa"];
+  return arr[(hashString(id) >>> 3) % arr.length]!;
 }

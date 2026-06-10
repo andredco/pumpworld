@@ -38,23 +38,23 @@ function PillsShard({ item }: { item: Item }) {
   useFrame((s) => {
     if (!g.current) return;
     const t = s.clock.elapsedTime + (item.id.charCodeAt(0) % 100) * 0.1;
-    g.current.position.y = 0.4 + Math.sin(t * 2) * 0.15;
-    g.current.rotation.y = t * 0.9;
+    g.current.position.y = 0.45 + Math.sin(t * 2) * 0.15;
+    g.current.rotation.y = t * 1.1;
   });
   const size = Math.min(0.5, 0.18 + (item.potency ?? 5) * 0.012);
   return (
-    <group ref={g} position={[item.position!.x, 0.4, item.position!.z]}>
+    <group ref={g} position={[item.position!.x, 0.45, item.position!.z]}>
       <mesh castShadow>
-        <icosahedronGeometry args={[size, 0]} />
+        <octahedronGeometry args={[size, 0]} />
         <meshStandardMaterial
-          color="#ffd23f"
-          emissive="#ffaa00"
-          emissiveIntensity={1.4}
-          roughness={0.25}
-          metalness={0.8}
+          color="#b794ff"
+          emissive="#a78bfa"
+          emissiveIntensity={1.8}
+          roughness={0.2}
+          metalness={0.3}
         />
       </mesh>
-      <pointLight color="#ffb43a" intensity={0.7} distance={4} decay={2} />
+      <pointLight color="#a78bfa" intensity={0.7} distance={4} decay={2} />
     </group>
   );
 }

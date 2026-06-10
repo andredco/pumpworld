@@ -8,7 +8,7 @@ import { BRAND_NAME } from "../brand.js";
  */
 
 export const TOKEN = {
-  symbol: "$PILLS",
+  symbol: "$SOULS",
   name: BRAND_NAME,
   network: "Solana",
   /** Launch venue. */

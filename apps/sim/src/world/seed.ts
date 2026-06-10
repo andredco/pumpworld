@@ -235,7 +235,7 @@ export function seedWorld(): World {
     pumpProducedTotal: 0,
     pumpInCirculation: 0,
     tokenStats: {
-      symbol: "$PILLS",
+      symbol: "$SOULS",
       mintAddress: config.token.mintAddress || null,
       source: "dexscreener",
       priceUsd: 0,
@@ -518,10 +518,10 @@ export function seedWorld(): World {
       world.items.set(id, item);
       pill.inventory.push({ itemId: id, count: 1 });
     }
-    // Each pill starts with a starter purse of $PILLS shards.
+    // Each pill starts with a starter purse of $SOULS shards.
     const purseId = nanoid(8);
     const purse: Item = {
-      id: purseId, kind: "currency", name: "$pills purse",
+      id: purseId, kind: "currency", name: "$souls purse",
       position: null, ownerPillId: pill.id, potency: Math.round(spawnRng.float(15, 45)),
     };
     world.items.set(purseId, purse);

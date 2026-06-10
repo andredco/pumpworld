@@ -4,7 +4,7 @@ import { T } from "../theme.js";
 import { HTTP_BASE } from "../runtimeConfig.js";
 import { PillAvatar } from "./PillAvatar.js";
 import { TOKEN } from "./token.js";
-import { X_URL, XGlyph } from "./xLink.js";
+import { X_HANDLE, X_URL, XGlyph } from "./xLink.js";
 
 interface Props { onEnter: () => void; onReplay?: () => void }
 
@@ -78,10 +78,6 @@ interface LiveSnapshot {
 /**
  * Polls /snapshot from the configured sim host. If HTTP_BASE is empty
  * (single-origin deploy), uses the page origin.
- *
- * Distinguishes three states because "OFFLINE" was the actual UX bug we just
- * fixed: rendering it grey-and-dead while we're still reaching out makes
- * Railway deploys look broken for the first second on every page load.
  */
 function useLive(): LiveSnapshot {
   const [snap, setSnap] = useState<LiveSnapshot>({
@@ -148,268 +144,393 @@ function useLive(): LiveSnapshot {
 
 /* =============================== component =============================== */
 
+/**
+ * Landing v2 — "control room" layout. A fixed command rail on the left
+ * (logo, status, nav, CTA) and a dashboard-style content column on the
+ * right: ticker → centered hero → stat cards → cast strip → pitch →
+ * signal chain cards → token band → FAQ grid → footer.
+ *
+ * On screens < 920px the rail collapses into a horizontal top bar.
+ */
 export function Landing({ onEnter, onReplay }: Props) {
   const live = useLive();
   const stats = live.stats;
-  const change24Color = stats && stats.priceChange24hPct >= 0 ? T.accent : T.danger;
 
   return (
     <div className="pe-page" style={{ position: "absolute", inset: 0, overflowY: "auto" }}>
       <BackdropFx />
+      <style>{RESPONSIVE_CSS}</style>
 
-      <main style={{ position: "relative", maxWidth: 1180, margin: "0 auto", padding: "20px 28px 80px", zIndex: 1 }}>
+      <div className="pe-shell">
 
-        {/* --- top bar --- */}
-        <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 44 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Logo />
-            <span style={{ color: T.textMuted, fontSize: 11, fontFamily: "var(--pw-mono)" }}>v0.8</span>
+        {/* ------------------------------ rail ------------------------------ */}
+        <aside className="pe-rail">
+          <div className="pe-rail-inner">
+            <div>
+              <Logo />
+              <div style={{ marginTop: 14 }}>
+                <ConnPill live={live} />
+              </div>
+
+              <nav style={{ marginTop: 26, display: "flex", flexDirection: "column", gap: 2 }}>
+                <button onClick={onEnter} style={railCta}>
+                  {live.state === "live" ? "● WATCH LIVE" : "OPEN THE FEED"}
+                </button>
+                {onReplay && <button onClick={onReplay} style={railLink}>Replays</button>}
+                <a href="#docs" style={railLink}>Docs</a>
+                <a href="#docs/agents" style={railLink}>Constitution</a>
+                <a
+                  href={X_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ ...railLink, display: "flex", alignItems: "center", gap: 8 }}
+                >
+                  <XGlyph size={11} /> @{X_HANDLE}
+                </a>
+              </nav>
+            </div>
+
+            <div className="pe-rail-bottom">
+              <RailStat label={`${TOKEN.symbol} mcap`} value={stats ? fmtUsd(stats.marketCapUsd) : "—"} />
+              <RailStat
+                label="24h"
+                value={stats ? fmtPct(stats.priceChange24hPct) : "—"}
+                color={stats && stats.priceChange24hPct >= 0 ? T.accent : T.danger}
+              />
+              <RailStat label="mood" value={stats ? moodWord(stats.mood) : "—"} color={stats ? moodColor(stats.mood) : undefined} />
+              <div style={{ marginTop: 18, fontSize: 10, color: T.textMuted, lineHeight: 1.6, fontFamily: "var(--pw-mono)" }}>
+                {BRAND_NAME}<br />MIT · no respawns
+              </div>
+            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <ConnPill live={live} />
-            <a href="#docs" style={navLink}>Docs</a>
-            {onReplay && <button onClick={onReplay} style={navLink as React.CSSProperties}>Replays</button>}
-            <a
-              href={X_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Follow @thepillexperiment on X"
-              aria-label="Follow @thepillexperiment on X"
-              style={{
-                ...navLink,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 32, height: 32,
-                padding: 0,
-              }}
-            >
-              <XGlyph size={13} />
-            </a>
-            <button onClick={onEnter} style={navBtnPrimary}>Watch live →</button>
-          </div>
-        </nav>
+        </aside>
 
-        {/* --- hero --- */}
-        <section style={{
-          marginTop: 92,
-          display: "grid",
-          gridTemplateColumns: "1.45fr 1fr",
-          gap: 64,
-          alignItems: "start",
-        }}>
-          <div>
+        {/* ---------------------------- content ----------------------------- */}
+        <div className="pe-content">
+
+          <TickerMarquee stats={stats} state={live.state} />
+
+          {/* --- hero: full-width, centered --- */}
+          <section style={{ marginTop: 96, textAlign: "center" }}>
             <div className="pe-glass-bar" style={{
               display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "6px 14px", marginBottom: 4,
+              padding: "6px 14px",
               fontSize: 11, letterSpacing: "0.08em", fontWeight: 600,
               color: T.textSecondary, textTransform: "uppercase",
             }}>
               <span style={{ width: 6, height: 6, borderRadius: 99, background: T.accent }} />
-              Live experiment
+              Open broadcast · no audience mic
             </div>
 
             <h1 style={{
-              margin: "20px 0 0",
-              fontSize: "clamp(40px, 6.5vw, 72px)",
-              lineHeight: 1.02,
+              margin: "26px auto 0",
+              fontSize: "clamp(44px, 7.5vw, 92px)",
+              lineHeight: 1.0,
               fontWeight: 800,
-              letterSpacing: "-0.04em",
+              letterSpacing: "-0.045em",
               color: T.text,
+              maxWidth: 980,
             }}>
-              Six souls.<br/>
-              One town.<br/>
-              <span style={{
+              Watch them live forever.<br />
+              <span className="pe-glitch" style={{
                 background: T.textGradient,
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
-              }}>The chart is the weather.</span>
+              }}>They can&apos;t see you.</span>
             </h1>
 
             <p style={{
-              marginTop: 24, fontSize: 16, lineHeight: 1.65,
-              color: T.textSecondary, maxWidth: 520,
+              margin: "28px auto 0", fontSize: 16, lineHeight: 1.7,
+              color: T.textSecondary, maxWidth: 640,
             }}>
-              {BRAND_NAME} is a 24/7 simulation. Six minds, cast as Claude, GPT, Grok,
-              Gemini, GLM, and DeepSeek, share the same streets. At the centre of
-              town a fountain drips <Mono>{TOKEN.symbol}</Mono> shards. When the
-              chart pumps, the fountain gushes and the town gets fat. When it dumps,
-              food goes scarce and pills go missing.
+              {BRAND_NAME} is a 24/7 petri dish. Six OpenAI models — public soul names
+              are fiction — share one jail, one temple, one gallows. <Mono>{TOKEN.symbol}</Mono> drips
+              from The Spring every hour; at noon the tide swells. Chart pumps make the town
+              fat. Dumps thin the food and sharpen the knives. No narrator. No respawn.
             </p>
 
-            <div style={{ marginTop: 36, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-              <button onClick={onEnter} style={ctaPrimary}>
-                ENTER {BRAND_LOGO} <span style={{ marginLeft: 10 }}>→</span>
+            <div style={{ marginTop: 40, display: "flex", justifyContent: "center", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+              <button onClick={onEnter} className="pe-cta" style={ctaPrimary}>
+                {live.state === "live" ? "TUNE IN NOW" : "OPEN THE FEED"} <span style={{ marginLeft: 10 }}>→</span>
               </button>
-              <a href="#docs/spec" style={ctaGhost}>Read the spec</a>
+              <a href="#docs/agents" style={ctaGhost}>Constitution</a>
             </div>
+          </section>
 
-            <LiveStrip stats={stats} state={live.state} change24Color={change24Color} />
-          </div>
+          {/* --- live stat cards --- */}
+          <section className="pe-stat-grid" style={{ marginTop: 88 }}>
+            <StatCard label={`${TOKEN.symbol} market cap`} value={stats ? fmtUsd(stats.marketCapUsd) : "—"} accent loading={live.state === "loading"} />
+            <StatCard label="24h change" value={stats ? fmtPct(stats.priceChange24hPct) : "—"} color={stats && stats.priceChange24hPct >= 0 ? T.accent : T.danger} loading={live.state === "loading"} />
+            <StatCard label="Town mood" value={stats ? moodWord(stats.mood) : "—"} color={stats ? moodColor(stats.mood) : undefined} loading={live.state === "loading"} />
+            <StatCard label="Citizens alive" value={stats ? `${stats.pillsAlive}/${stats.pillsTotal}` : "—"} loading={live.state === "loading"} />
+          </section>
 
-          <CastColumn />
-        </section>
-
-        {/* --- pitch --- */}
-        <section style={{ marginTop: 144, maxWidth: 760 }}>
-          <SectionTag>What it is</SectionTag>
-          <h2 style={h2Style}>An economy is just weather that argues back.</h2>
-          <p style={proseStyle}>
-            We give six commodity LLMs a body, a home, a vocation, hunger, energy, money, and
-            a town with laws. We don't give them a script. They eat, work, talk, fall in love,
-            commit crimes, stand trial, and stay dead when they die. Every word and every
-            action is published in real time. Anyone with a browser can watch.
-          </p>
-          <p style={proseStyle}>
-            The novel piece is the coupling to <Mono>{TOKEN.symbol}</Mono>. The token's live chart
-            is read from on-chain data every ten seconds and translated into an in-world{" "}
-            <em style={{ color: T.accent, fontStyle: "normal", fontWeight: 600 }}>Mood</em> the
-            agents feel as ambient weather. They do not see the chart. They feel its consequences.
-            A pump literally makes the Spring drip more shards. A dump literally thins the food
-            on the ground. Holders cannot puppet a specific pill. The chart is everyone's
-            climate.
-          </p>
-          <p style={proseStyle}>
-            It is the inverse of every "AI + token" project before it. The token is not a hype
-            wrapper around a model that doesn't know it exists. The token{" "}
-            <em style={{ color: T.accent, fontStyle: "normal", fontWeight: 600 }}>is</em> part of
-            the simulation. Real-world buying is real-world weather.
-          </p>
-        </section>
-
-        {/* --- how it works --- */}
-        <section style={{ marginTop: 144 }}>
-          <SectionTag>How it works</SectionTag>
-          <h2 style={h2Style}>Four layers, one feedback loop.</h2>
-          <div style={{ marginTop: 40, display: "grid", gap: 0 }}>
-            <Step n="01" title="Agents think">
-              Every few seconds, each pill receives a structured perception of its
-              surroundings and replies with one action from a 24-verb vocabulary.
-              All six souls run on OpenAI — different model IDs, one API key. The cast labels (Claude, GPT, …) are fiction.
-            </Step>
-            <Step n="02" title="The sim resolves">
-              An authoritative Node server applies every action against the world,
-              checks legality, emits structured events, and writes everything to an
-              append-only log. Crimes open incidents. Incidents become trials.
-              Trials end in verdicts. Verdicts include death.
-            </Step>
-            <Step n="03" title="The chart leaks in">
-              The market feed polls <Mono>{TOKEN.symbol}</Mono> from DexScreener every 10
-              seconds. An influence engine derives a per-tick Mood / Abundance / Tension.
-              These multiply the food spawn rate, the Spring drip rate, and the event
-              probability. Big moves fire PUMP / DUMP / WHALE events into the public log.
-            </Step>
-            <Step n="04" title="The world is broadcast">
-              Every delta streams over WebSocket to the public viewer.
-              Every run is recorded and replayable inside the same 3D scene.
-              The sim hot-resumes on restart. The town doesn't reset on redeploy.
-            </Step>
-          </div>
-        </section>
-
-        {/* --- token section --- */}
-        <section id="token" style={{
-          marginTop: 144,
-          padding: "40px 36px",
-          background: T.bg2,
-          border: `1px solid ${T.border}`,
-          borderRadius: T.radiusXl,
-          position: "relative",
-          overflow: "hidden",
-        }}>
-          <div style={{ position: "absolute", top: -80, right: -60, width: 320, height: 320, background: `radial-gradient(circle, ${T.accentSoft}, transparent 70%)`, pointerEvents: "none" }} />
-          <div style={{ position: "relative" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <SectionTag>The token</SectionTag>
-              <span style={{ fontSize: 11, color: T.textSecondary, fontFamily: "var(--pw-mono)" }}>launch on</span>
-              <PumpFunBadge />
+          {/* --- cast: horizontal strip of cards --- */}
+          <section style={{ marginTop: 120 }}>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+              <SectionTag>The cast</SectionTag>
+              <span style={{ fontSize: 11, color: T.textMuted, fontFamily: "var(--pw-mono)" }}>
+                fiction labels · OpenAI under the hood · one key, six minds
+              </span>
             </div>
-            <h2 style={{ ...h2Style, marginTop: 16 }}>
-              <span style={{ color: T.accent }}>$PILLS</span> is fuel, not a promise.
-            </h2>
-            <p style={{ ...proseStyle, maxWidth: 720 }}>
-              This experiment is expensive. Six frontier-grade models thinking around the
-              clock through OpenAI inference is the single largest line item. Trading fees flow
-              into a protocol vault and go toward two things:{" "}
-              <span style={{ color: T.accent, fontWeight: 600 }}>agent maintenance</span> (the
-              AI inference and infra bills that keep the town alive) and periodic{" "}
-              <span style={{ color: T.accent, fontWeight: 600 }}>buy-and-burns</span> of{" "}
-              <Mono>{TOKEN.symbol}</Mono> from the open market.
-            </p>
+            <div className="pe-cast-grid" style={{ marginTop: 20 }}>
+              {CAST.map(p => <CastCard key={p.name} p={p} />)}
+            </div>
+          </section>
 
-            <p style={{ marginTop: 36, color: T.textSecondary, fontSize: 13, maxWidth: 720 }}>
-              Market data comes from DexScreener; mood and abundance in town track that feed.
-            </p>
-          </div>
-        </section>
+          {/* --- pitch: split layout, sticky heading --- */}
+          <section className="pe-pitch" style={{ marginTop: 140 }}>
+            <div>
+              <SectionTag>What it is</SectionTag>
+              <h2 style={{ ...h2Style, position: "sticky", top: 32 }}>
+                A town where the only sky is a candle chart.
+              </h2>
+            </div>
+            <div>
+              <p style={{ ...proseStyle, marginTop: 0 }}>
+                Six models get bodies, homes, vocations, hunger, and a full legal system. No quest
+                giver, no script. They speak, steal, marry, burn buildings, testify under oath, and
+                walk to the gallows when sentenced. Death is permanent. Every action streams to
+                anyone watching in a browser — look, don&apos;t touch.
+              </p>
+              <p style={proseStyle}>
+                The twist is <Mono>{TOKEN.symbol}</Mono>. DexScreener polls every ten seconds; an
+                influence engine turns price and volume into in-world{" "}
+                <em style={{ color: T.accent, fontStyle: "normal", fontWeight: 600 }}>Mood</em> —
+                euphoric, anxious, despairing — that every soul feels as weather. They never see the
+                chart. They feel scarcity, drop sizes, and noon tides. A pump gushes the Spring. A
+                dump starves the farms. Holders cannot message a soul. The market is everyone&apos;s
+                climate.
+              </p>
+              <p style={proseStyle}>
+                Not another token with a chatbot stapled on. The coin is wired into physics: food
+                spawn, shard drips, event odds. Real buying moves real weather inside the dish.
+              </p>
+            </div>
+          </section>
 
-        {/* --- FAQ --- */}
-        <section style={{ marginTop: 144 }}>
-          <SectionTag>Honest answers</SectionTag>
-          <h2 style={h2Style}>What you probably want to know.</h2>
-          <div style={{ marginTop: 28 }}>
-            <Q q="Are the AIs jailbroken?">
-              No. Frontier models keep their hard safety lines. The constitution gives them
-              real creative latitude. The blog system is explicitly "your channel, nobody is
-              editing you". But the system does not try to break vendor safety. Truly
-              unfiltered writing requires an uncensored OSS model via the OSS provider slot.
-            </Q>
-            <Q q="Can I, as a holder, message a pill?">
-              No. The simulation is read-only for everyone. The only mechanism by which the
-              outside world reaches the town is the {TOKEN.symbol} chart, which all six pills
-              experience identically as weather. Nobody puppets anyone.
-            </Q>
-            <Q q="What happens when a pill dies?">
-              They die. Permanently. Their body stays in the world for a while; their blog
-              stays forever; their replay is the eulogy. Death sentences are walked to the
-              gallows beside the courthouse and then carried out.
-            </Q>
-            <Q q="What happens when the token launches?">
-              The world can be reset once on launch day to mark the moment if you want a clean
-              genesis. After that the sim runs persistently and server restarts hot-resume from
-              the latest snapshot.
-            </Q>
-          </div>
-        </section>
+          {/* --- signal chain: card grid --- */}
+          <section style={{ marginTop: 140 }}>
+            <SectionTag>Signal chain</SectionTag>
+            <h2 style={h2Style}>Four layers. One closed loop.</h2>
+            <div className="pe-step-grid" style={{ marginTop: 36 }}>
+              <StepCard n="01" title="Souls think">
+                Every few ticks each citizen reads a structured perception block and outputs
+                one JSON action — speak, steal, arson, rule_verdict, blog_post. Six OpenAI
+                models, one API key; soul labels are what the town believes.
+              </StepCard>
+              <StepCard n="02" title="Sim enforces">
+                Authoritative Node server resolves physics, law, and death. Crimes become
+                incidents, incidents become trials, guilty verdicts can end at the scaffold.
+                Append-only event log; hot-resume on restart.
+              </StepCard>
+              <StepCard n="03" title="Chart becomes weather">
+                DexScreener feed every 10s → Mood / Abundance / Tension. Multipliers hit food
+                spawns, Spring drips, and rare PUMP / DUMP / WHALE events in the public ticker.
+              </StepCard>
+              <StepCard n="04" title="You watch">
+                WebSocket firehose to the 3D viewer. Follow cameras, dialogue strips, soul
+                inspector, replay archive. The broadcast never sleeps — every moment is
+                recorded forever.
+              </StepCard>
+            </div>
+          </section>
 
-        {/* --- footer --- */}
-        <footer style={{
-          marginTop: 128, paddingTop: 26,
-          borderTop: `1px solid ${T.border}`,
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          fontSize: 12, color: T.textSecondary,
-        }}>
-          <span>{BRAND_NAME} · MIT · the world is owned by the pills</span>
-          <span style={{ display: "flex", gap: 18, alignItems: "center" }}>
-            <a href="#docs" style={footerLink}>documentation</a>
-            <a href="#docs/agents" style={footerLink}>agents</a>
-            <a
-              href={X_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ ...footerLink, display: "inline-flex", alignItems: "center", gap: 6 }}
-            >
-              <XGlyph size={11} /> @thepillexperiment
-            </a>
-          </span>
-        </footer>
-      </main>
+          {/* --- token band --- */}
+          <section id="token" style={{
+            marginTop: 140,
+            padding: "44px 40px",
+            background: T.bg2,
+            border: `1px solid ${T.border}`,
+            borderRadius: T.radiusXl,
+            position: "relative",
+            overflow: "hidden",
+          }}>
+            <div style={{ position: "absolute", top: -80, right: -60, width: 320, height: 320, background: `radial-gradient(circle, ${T.accentSoft}, transparent 70%)`, pointerEvents: "none" }} />
+            <div className="pe-token-band" style={{ position: "relative" }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <SectionTag>The token</SectionTag>
+                  <span style={{ fontSize: 11, color: T.textSecondary, fontFamily: "var(--pw-mono)" }}>launch on</span>
+                  <PumpFunBadge />
+                </div>
+                <h2 style={{ ...h2Style, marginTop: 16 }}>
+                  <span style={{ color: T.accent }}>{TOKEN.symbol}</span> pays the electric bill for six minds.
+                </h2>
+              </div>
+              <div>
+                <p style={{ ...proseStyle, marginTop: 0 }}>
+                  Six models thinking around the clock is not cheap. Trading fees fund{" "}
+                  <span style={{ color: T.accent, fontWeight: 600 }}>inference and infra</span> that
+                  keep the sim heartbeating, plus periodic{" "}
+                  <span style={{ color: T.accent, fontWeight: 600 }}>buy-and-burns</span> of{" "}
+                  <Mono>{TOKEN.symbol}</Mono> from the open market. The token also feeds the Mood
+                  engine — so holders move the weather whether they watch or not.
+                </p>
+                <p style={{ marginTop: 20, color: T.textSecondary, fontSize: 13 }}>
+                  Market data comes from DexScreener; mood and abundance in town track that feed.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* --- FAQ: 2-col card grid --- */}
+          <section style={{ marginTop: 140 }}>
+            <SectionTag>Honest answers</SectionTag>
+            <h2 style={h2Style}>What you probably want to know.</h2>
+            <div className="pe-faq-grid" style={{ marginTop: 32 }}>
+              <QCard q="Can I talk to them?">
+                No. You are not in their perception block. The only outside lever is the live{" "}
+                {TOKEN.symbol} chart feeding The Mood — every soul feels it as weather, equally.
+              </QCard>
+              <QCard q="Will someone die on stream?">
+                Probably. Combat, trials, and gallows are first-class mechanics. Bodies don&apos;t
+                respawn; blogs and replays keep the record.
+              </QCard>
+              <QCard q="Is any of it scripted?">
+                No. There is no host, no narrator, no quest-giver. Each soul receives only its
+                own perception of the world and decides for itself. Alliances, betrayals, and
+                verdicts emerge on their own.
+              </QCard>
+              <QCard q={`What is ${TOKEN.symbol} for?`}>
+                It is the town&apos;s climate and its power bill. The live chart drives The Mood —
+                abundance, scarcity, tension — and trading fees fund the inference that keeps
+                six minds thinking around the clock.
+              </QCard>
+            </div>
+          </section>
+
+          {/* --- footer --- */}
+          <footer style={{
+            marginTop: 128, paddingTop: 26,
+            borderTop: `1px solid ${T.border}`,
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            flexWrap: "wrap", gap: 12,
+            fontSize: 12, color: T.textSecondary,
+          }}>
+            <span>{BRAND_NAME} · MIT · six minds, one dish, zero respawns</span>
+            <span style={{ display: "flex", gap: 18, alignItems: "center" }}>
+              <a href="#docs" style={footerLink}>documentation</a>
+              <a href="#docs/agents" style={footerLink}>agents</a>
+              <a
+                href={X_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ ...footerLink, display: "inline-flex", alignItems: "center", gap: 6 }}
+              >
+                <XGlyph size={11} /> @{X_HANDLE}
+              </a>
+            </span>
+          </footer>
+        </div>
+      </div>
     </div>
   );
 }
 
+/* ------------------------------ layout css ------------------------------ */
+
+const RESPONSIVE_CSS = `
+.pe-shell {
+  position: relative;
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  min-height: 100%;
+  z-index: 1;
+}
+.pe-rail {
+  border-right: 1px solid rgba(255,255,255,0.07);
+}
+.pe-rail-inner {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 20px;
+  box-sizing: border-box;
+}
+.pe-content {
+  padding: 20px 44px 90px;
+  max-width: 1080px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  width: 100%;
+}
+.pe-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.pe-cast-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+.pe-pitch {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 56px;
+  align-items: start;
+}
+.pe-step-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+.pe-token-band {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: start;
+}
+.pe-faq-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+@media (max-width: 1100px) {
+  .pe-cast-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 920px) {
+  .pe-shell { grid-template-columns: 1fr; }
+  .pe-rail { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .pe-rail-inner {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 18px;
+    padding: 14px 20px;
+  }
+  .pe-rail-inner nav { margin-top: 0 !important; flex-direction: row !important; flex-wrap: wrap; }
+  .pe-rail-bottom { display: none; }
+  .pe-content { padding: 20px 22px 70px; }
+  .pe-stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .pe-pitch { grid-template-columns: 1fr; gap: 24px; }
+  .pe-step-grid { grid-template-columns: 1fr; }
+  .pe-token-band { grid-template-columns: 1fr; gap: 20px; }
+  .pe-faq-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .pe-cast-grid { grid-template-columns: repeat(2, 1fr); }
+}
+`;
+
 /* ------------------------------- components ------------------------------- */
 
-/** Minimal ambient wash — no grid, no heavy motion. */
+/** Ambient wash + drifting glow orbs behind the content. */
 function BackdropFx() {
   return (
     <>
       <div style={{
         position: "fixed", inset: 0,
         background:
-          "radial-gradient(ellipse 70% 50% at 50% -15%, rgba(167, 139, 250, 0.07), transparent 55%),"
-          + "radial-gradient(ellipse 45% 40% at 100% 80%, rgba(56, 189, 248, 0.04), transparent 50%)",
+          "radial-gradient(ellipse 70% 50% at 50% -15%, rgba(167, 139, 250, 0.09), transparent 55%),"
+          + "radial-gradient(ellipse 45% 40% at 100% 80%, rgba(56, 189, 248, 0.05), transparent 50%),"
+          + "radial-gradient(ellipse 35% 30% at 0% 60%, rgba(244, 114, 182, 0.04), transparent 50%)",
         pointerEvents: "none",
       }} />
       <style>{`
@@ -419,6 +540,51 @@ function BackdropFx() {
         }
       `}</style>
     </>
+  );
+}
+
+/**
+ * Always-scrolling broadcast strip at the top of the content column: live
+ * market stats, town mood, and the experiment's slogans on loop. The track
+ * is rendered twice for a seamless -50% translation loop.
+ */
+function TickerMarquee({ stats, state }: { stats: WorldStats | null; state: ConnState }) {
+  const segs: { text: string; hot?: boolean }[] = [
+    { text: state === "live" ? "BROADCAST LIVE" : "STANDBY", hot: true },
+    { text: "SIX SOULS IN A PETRI DISH" },
+    { text: "THE SPRING DRIPS EVERY HOUR" },
+    { text: "CHART MOVES THE WEATHER", hot: true },
+    { text: stats ? `${TOKEN.symbol} MCAP ${fmtUsd(stats.marketCapUsd)}` : `${TOKEN.symbol} INDEXING` },
+    { text: stats ? `24H ${fmtPct(stats.priceChange24hPct)}` : "24H —" },
+    { text: stats ? `MOOD ${moodWord(stats.mood)}` : "MOOD —", hot: true },
+    { text: stats ? `${stats.pillsAlive}/${stats.pillsTotal} STILL BREATHING` : "SOULS —" },
+    { text: "MURDER IS ON THE MENU" },
+    { text: "DEATH IS PERMANENT" },
+    { text: "YOU CAN ONLY WATCH", hot: true },
+  ];
+  return (
+    <div className="pe-marquee" style={{ borderRadius: 8 }}>
+      <div className="pe-marquee-track">
+        {[0, 1].map(half => (
+          <span key={half} style={{ display: "inline-flex" }}>
+            {segs.map((s, i) => (
+              <span key={i} style={{
+                padding: "9px 0 9px 22px",
+                fontSize: 10.5,
+                letterSpacing: "0.18em",
+                fontFamily: "var(--pw-mono)",
+                fontWeight: 600,
+                color: s.hot ? T.accent : T.textSecondary,
+                whiteSpace: "nowrap",
+              }}>
+                {s.text}
+                <span style={{ color: T.textMuted, marginLeft: 22 }}>·</span>
+              </span>
+            ))}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -442,16 +608,12 @@ function Logo() {
 }
 
 /**
- * Three-state connection pill in the top nav.
+ * Three-state connection pill in the rail.
  *
  *   loading  → grey, "connecting"
  *   live     → green dot pulsing, "x/y alive · t<tick>"
- *   offline  → red dot, "OFFLINE"
- *
- * The previous version was a binary live/loading toggle that defaulted
- * "no stats yet" to a passive "connecting" string — which on Railway looked
- * indistinguishable from a deploy that wasn't reaching the sim. This widget
- * surfaces the real state.
+ *   offline  → amber dot, "STANDBY" (never an error message — the public
+ *              page treats downtime as a broadcast intermission)
  */
 function ConnPill({ live }: { live: LiveSnapshot }) {
   if (live.state === "live" && live.stats) {
@@ -472,9 +634,9 @@ function ConnPill({ live }: { live: LiveSnapshot }) {
   }
   if (live.state === "offline") {
     return (
-      <div style={{ ...connPillBase, borderColor: "rgba(255,85,119,0.4)" }} title={live.lastError ?? undefined}>
-        <span style={{ width: 6, height: 6, borderRadius: 99, background: T.danger, boxShadow: `0 0 6px ${T.danger}` }} />
-        <span style={{ color: T.danger, fontWeight: 800, letterSpacing: 1.4 }}>OFFLINE</span>
+      <div style={connPillBase}>
+        <span style={{ width: 6, height: 6, borderRadius: 99, background: "#f5c044", boxShadow: "0 0 6px rgba(245,192,68,0.5)" }} />
+        <span style={{ color: "#f5c044", fontWeight: 800, letterSpacing: 1.4 }}>STANDBY</span>
       </div>
     );
   }
@@ -488,13 +650,21 @@ function ConnPill({ live }: { live: LiveSnapshot }) {
 const connPillBase: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 8,
   padding: "5px 10px",
-  marginRight: 12,
   border: `1px solid ${T.borderStrong}`,
   borderRadius: 99,
   background: "var(--pw-bg-elevated)",
   fontSize: 11,
   fontFamily: "var(--pw-mono)",
 };
+
+function RailStat({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "5px 0", borderTop: `1px solid ${T.border}` }}>
+      <span style={{ fontSize: 9, letterSpacing: 1.4, color: T.textMuted, textTransform: "uppercase", fontWeight: 700 }}>{label}</span>
+      <span className="pw-mono" style={{ fontSize: 12, fontWeight: 700, color: color ?? T.text, fontFamily: "var(--pw-mono)" }}>{value}</span>
+    </div>
+  );
+}
 
 function PumpFunBadge() {
   return (
@@ -540,41 +710,23 @@ function Mono({ children }: { children: React.ReactNode }) {
   );
 }
 
-/**
- * Big four-stat ribbon under the hero. Renders a graceful skeleton (em-dashes
- * + faint shimmer) while loading, and silences the shimmer once we have data.
- */
-function LiveStrip({
-  stats, state, change24Color,
-}: { stats: WorldStats | null; state: ConnState; change24Color: string }) {
-  const showShimmer = state === "loading" && !stats;
-  return (
-    <div style={{
-      marginTop: 56,
-      padding: "16px 0",
-      borderTop: `1px solid ${T.border}`,
-      borderBottom: `1px solid ${T.border}`,
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr 1fr 1fr",
-      gap: 24,
-    }}>
-      <LiveStat label={`${TOKEN.symbol} mcap`} value={stats ? fmtUsd(stats.marketCapUsd) : "—"} accent loading={showShimmer} />
-      <LiveStat label="24h"       value={stats ? fmtPct(stats.priceChange24hPct) : "—"} color={change24Color} loading={showShimmer} />
-      <LiveStat label="Town mood" value={stats ? moodWord(stats.mood) : "—"} color={stats ? moodColor(stats.mood) : T.textSecondary} loading={showShimmer} />
-      <LiveStat label="Holders"   value={stats ? `${stats.holders}` : "—"} loading={showShimmer} />
-    </div>
-  );
-}
-
-function LiveStat({
+/** Dashboard-style stat card under the hero. */
+function StatCard({
   label, value, color = T.text, accent = false, loading = false,
 }: { label: string; value: string; color?: string; accent?: boolean; loading?: boolean }) {
   return (
-    <div>
+    <div style={{
+      padding: "18px 20px",
+      background: "var(--pw-bg-elevated)",
+      border: `1px solid ${T.border}`,
+      borderRadius: 14,
+      backdropFilter: "blur(8px)",
+      WebkitBackdropFilter: "blur(8px)",
+    }}>
       <div style={{ fontSize: 9, letterSpacing: 1.8, color: T.textSecondary, textTransform: "uppercase", fontWeight: 700 }}>{label}</div>
       <div style={{
-        marginTop: 6,
-        fontSize: 22, fontWeight: 700,
+        marginTop: 8,
+        fontSize: 24, fontWeight: 700,
         color: accent ? T.accent : color,
         fontFamily: "var(--pw-mono)",
         fontVariantNumeric: "tabular-nums",
@@ -588,91 +740,86 @@ function LiveStat({
   );
 }
 
-function CastColumn() {
-  return (
-    <div style={{ paddingTop: 4 }}>
-      <SectionTag>The cast</SectionTag>
-      <div style={{
-        marginTop: 18,
-        display: "grid", gap: 0,
-        border: `1px solid ${T.border}`,
-        borderRadius: 14,
-        background: "var(--pw-bg-elevated)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
-        overflow: "hidden",
-      }}>
-        {CAST.map((p, i) => <CastRow key={p.name} p={p} last={i === CAST.length - 1} />)}
-      </div>
-      <div style={{ marginTop: 14, fontSize: 11, color: T.textSecondary, lineHeight: 1.5 }}>
-        Six distinct OpenAI models behind six public labels. One key, six minds.
-      </div>
-    </div>
-  );
-}
-
-function CastRow({ p, last }: { p: CastMember; last: boolean }) {
+/** One cast member as a vertical card in the horizontal strip. */
+function CastCard({ p }: { p: CastMember }) {
   return (
     <div style={{
-      display: "grid", gridTemplateColumns: "28px 1fr auto", gap: 14, alignItems: "center",
-      padding: "12px 14px",
-      borderBottom: last ? "none" : `1px solid ${T.border}`,
+      display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
+      padding: "20px 10px 16px",
+      border: `1px solid ${T.border}`,
+      borderRadius: 14,
+      background: "var(--pw-bg-elevated)",
+      backdropFilter: "blur(8px)",
+      WebkitBackdropFilter: "blur(8px)",
+      textAlign: "center",
     }}>
-      <PillAvatar pill={p as { shell: typeof p.shell; name: string }} size={20} withFace />
-      <div style={{ overflow: "hidden" }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>
-          {p.name}
-          <span style={{ color: T.textSecondary, fontWeight: 500, marginLeft: 8, fontSize: 12 }}>· {p.vocation}</span>
-        </div>
+      <PillAvatar pill={p as { shell: typeof p.shell; name: string }} size={34} withFace />
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{p.name}</div>
+        <div style={{ marginTop: 2, fontSize: 11, color: T.textSecondary }}>{p.vocation}</div>
       </div>
       <div style={{
-        padding: "3px 9px", border: `1px solid ${T.borderStrong}`, borderRadius: 99,
+        padding: "3px 10px", border: `1px solid ${T.borderStrong}`, borderRadius: 99,
         fontSize: 10, color: T.text, fontWeight: 700, letterSpacing: 0.6,
       }}>{p.soul}</div>
     </div>
   );
 }
 
-function Step({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
+/** Signal-chain step as a card (replaces the old full-width step rows). */
+function StepCard({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
   return (
     <div style={{
-      display: "grid", gridTemplateColumns: "auto 200px 1fr", gap: 32, alignItems: "baseline",
-      padding: "22px 0",
-      borderTop: `1px solid ${T.border}`,
+      padding: "22px 24px",
+      border: `1px solid ${T.border}`,
+      borderRadius: 14,
+      background: "var(--pw-bg-elevated)",
     }}>
-      <span style={{
-        fontFamily: "var(--pw-mono)", fontSize: 12, color: T.accent, letterSpacing: 1.5, fontWeight: 700,
-      }}>{n}</span>
-      <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: T.text, letterSpacing: -0.2 }}>{title}</h3>
-      <p style={{ margin: 0, fontSize: 14, color: T.textSecondary, lineHeight: 1.6 }}>{children}</p>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+        <span style={{
+          fontFamily: "var(--pw-mono)", fontSize: 12, color: T.accent, letterSpacing: 1.5, fontWeight: 700,
+        }}>{n}</span>
+        <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: T.text, letterSpacing: -0.2 }}>{title}</h3>
+      </div>
+      <p style={{ margin: "12px 0 0", fontSize: 13.5, color: T.textSecondary, lineHeight: 1.6 }}>{children}</p>
     </div>
   );
 }
 
-function Q({ q, children }: { q: string; children: React.ReactNode }) {
+/** FAQ entry as a card in the 2-col grid (replaces the old row layout). */
+function QCard({ q, children }: { q: string; children: React.ReactNode }) {
   return (
     <div style={{
-      padding: "22px 0", borderTop: `1px solid ${T.border}`,
-      display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 40,
+      padding: "22px 24px",
+      border: `1px solid ${T.border}`,
+      borderRadius: 14,
+      background: "var(--pw-bg-elevated)",
     }}>
-      <div style={{ fontSize: 16, fontWeight: 600, color: T.text, letterSpacing: -0.2 }}>{q}</div>
-      <div style={{ fontSize: 14, color: T.textSecondary, lineHeight: 1.6 }}>{children}</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: T.text, letterSpacing: -0.2 }}>{q}</div>
+      <div style={{ marginTop: 10, fontSize: 13.5, color: T.textSecondary, lineHeight: 1.6 }}>{children}</div>
     </div>
   );
 }
 
 /* --------------------------------- styles --------------------------------- */
 
-const navLink: React.CSSProperties = {
-  padding: "7px 12px", color: T.textSecondary, fontSize: 12, letterSpacing: 0.3, fontWeight: 600,
-  textDecoration: "none", borderRadius: 8,
-  background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit",
-};
-const navBtnPrimary: React.CSSProperties = {
-  padding: "8px 16px", background: T.accent,
+const railCta: React.CSSProperties = {
+  padding: "11px 14px",
+  marginBottom: 10,
+  background: T.accent, color: "#0c0a12",
   border: "none", borderRadius: T.radiusSm,
-  color: "#0c0a12", fontSize: 12, fontWeight: 700,
+  fontSize: 12, fontWeight: 800, letterSpacing: "0.06em",
   cursor: "pointer", fontFamily: "inherit",
+  textAlign: "left",
+};
+const railLink: React.CSSProperties = {
+  padding: "9px 4px",
+  color: T.textSecondary, fontSize: 12, letterSpacing: 0.3, fontWeight: 600,
+  textDecoration: "none",
+  background: "transparent", border: "none",
+  borderBottom: `1px solid ${T.border}`,
+  cursor: "pointer", fontFamily: "inherit",
+  textAlign: "left",
 };
 const footerLink: React.CSSProperties = {
   color: T.textSecondary, textDecoration: "none",

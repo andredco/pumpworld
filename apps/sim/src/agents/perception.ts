@@ -119,7 +119,7 @@ export function buildPerception(world: World, pill: Pill, memory: Memory): strin
   lines.push(`tick ${world.meta.tick} · day ${world.meta.dayOfWorld} · ${hourStr} (${partOfDay}) · ${world.meta.season} · ${world.meta.weather} · ${world.meta.temperatureCelsius.toFixed(1)}°C`);
   lines.push(`map: ${world.meta.size}x${world.meta.size}m grid, town square at (0,0), The Spring (sacred fountain) at centre`);
   lines.push(`streets: east-west = Pill Avenue (central), Shard Walk, Capsule Lane, Tide Way; north-south = Founders Street (central), Fountain Cross, Old Cinder Street, Templegate Street`);
-  lines.push(`$PILLS: ${world.meta.pumpInCirculation} shards in circulation · ${world.meta.pumpProducedTotal} produced since genesis. The Spring drips shards each hour; a larger tide pours at noon.`);
+  lines.push(`$SOULS: ${world.meta.pumpInCirculation} shards in circulation · ${world.meta.pumpProducedTotal} produced since genesis. The Spring drips shards each hour; a larger tide pours at noon.`);
 
   const inf = world.meta.tokenInfluence;
   if (inf) {

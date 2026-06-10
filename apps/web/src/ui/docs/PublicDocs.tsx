@@ -106,9 +106,8 @@ export function PublicDocs({ route, onBack }: Props) {
               Documentation
             </h1>
             <p style={{ maxWidth: 640, color: DOC_PDIM, fontSize: 16, lineHeight: 1.55, marginBottom: 36 }}>
-              Readable references for how The Pill Experiment works. Ops runbooks, API keys, and{' '}
-              <strong style={{ color: DOC_PTEXT }}>.env</strong> layouts stay private — nothing here is copy-paste
-              infrastructure.
+              Readable references for how Six Souls works — the simulation model, the
+              market coupling, and the constitution every soul lives under.
             </p>
 
             <div style={{

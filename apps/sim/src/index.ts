@@ -31,7 +31,7 @@ function createTokenFeed(): TokenFeed {
       return new OffTokenFeed();
     }
     throw new Error(
-      "PUMPWORLD_TOKEN_MINT is required. The sim polls DexScreener for live $PILLS price and volume.",
+      "PUMPWORLD_TOKEN_MINT is required. The sim polls DexScreener for live $SOULS price and volume.",
     );
   }
   if (config.token.source !== "auto" && config.token.source !== "dexscreener") {
@@ -96,7 +96,7 @@ async function main() {
   // have a starting point to load.
   await writeSnapshot(runDir, world.snapshot());
 
-  console.log(`\n  PILL EXPERIMENT v${SERVER_VERSION}`);
+  console.log(`\n  SIX SOULS v${SERVER_VERSION}`);
   console.log(`  source:      ${resume.source === "snapshot" ? `resumed from tick ${resume.resumedFromTick}` : "fresh genesis"}`);
   console.log(`  seed:        ${world.meta.seed}`);
   console.log(`  tickMs:      ${world.meta.tickMs}`);

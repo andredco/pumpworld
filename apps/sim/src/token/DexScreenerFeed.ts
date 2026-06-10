@@ -1,5 +1,5 @@
 /**
- * Live $PILLS market feed via DexScreener's public API.
+ * Live $SOULS market feed via DexScreener's public API.
  *
  * Endpoint: https://api.dexscreener.com/latest/dex/tokens/{mintAddress}
  *   - free, no API key required
@@ -53,7 +53,7 @@ export class DexScreenerFeed implements TokenFeed {
   ) {
     this.holdersOverride = initialHolders > 0 ? initialHolders : null;
     this.state = {
-      symbol: "$PILLS",
+      symbol: "$SOULS",
       mintAddress,
       source: "dexscreener",
       priceUsd: 0,
@@ -112,7 +112,7 @@ export class DexScreenerFeed implements TokenFeed {
       if (this.spark.length > 60) this.spark.shift();
 
       this.state = {
-        symbol: "$PILLS",
+        symbol: "$SOULS",
         mintAddress: this.mintAddress,
         source: "dexscreener",
         priceUsd,

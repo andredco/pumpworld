@@ -26,6 +26,16 @@ function readRoute(): Route {
   return "landing";
 }
 
+/** Broadcast-feed overlays — film grain + scanlines over the whole app. */
+function CrtOverlay() {
+  return (
+    <>
+      <div className="pe-noise" />
+      <div className="pe-scanlines" />
+    </>
+  );
+}
+
 export function App() {
   const [route, setRoute] = useState<Route>(() => readRoute());
 
@@ -41,12 +51,19 @@ export function App() {
     setRoute(readRoute());
   };
 
-  if (route === "landing") return <Landing onEnter={() => goto("world")} onReplay={() => goto("replay")} />;
-  if (route === "replay") return <Replay onBack={() => goto("landing")} />;
-  if (route === "docs" || route.startsWith("docs/")) {
-    return <PublicDocs route={route as DocsRouteKey} onBack={() => goto("landing")} />;
-  }
-  return <WorldView onBack={() => goto("landing")} onReplay={() => goto("replay")} />;
+  const page =
+    route === "landing" ? <Landing onEnter={() => goto("world")} onReplay={() => goto("replay")} /> :
+    route === "replay" ? <Replay onBack={() => goto("landing")} /> :
+    (route === "docs" || route.startsWith("docs/"))
+      ? <PublicDocs route={route as DocsRouteKey} onBack={() => goto("landing")} />
+      : <WorldView onBack={() => goto("landing")} onReplay={() => goto("replay")} />;
+
+  return (
+    <>
+      {page}
+      <CrtOverlay />
+    </>
+  );
 }
 
 function WorldView({ onBack, onReplay }: { onBack: () => void; onReplay: () => void }) {

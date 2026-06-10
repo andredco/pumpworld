@@ -35,7 +35,7 @@ export function CameraSwitcher() {
   );
 
   const wrap: React.CSSProperties = {
-    position: "absolute", bottom: 16, left: 16,
+    position: "absolute", bottom: 16, right: 16,
     padding: 6,
     background: "var(--pw-card)",
     border: "1px solid var(--pw-border)",
@@ -85,7 +85,7 @@ export function CameraSwitcher() {
         </button>
         {open && (
           <div style={dropdownStyle}>
-            <div style={dropHeader}>Follow a pill</div>
+            <div style={dropHeader}>Follow a soul</div>
             {pillList.map(p => {
               const isCurrent = followPillId === p.id && mode === "follow";
               return (
@@ -128,7 +128,7 @@ export function CameraSwitcher() {
 
 const dropdownStyle: React.CSSProperties = {
   position: "absolute",
-  bottom: "calc(100% + 8px)", left: 0,
+  bottom: "calc(100% + 8px)", right: 0,
   minWidth: 220,
   padding: 4,
   background: "rgba(7,9,12,0.96)",

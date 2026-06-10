@@ -99,9 +99,9 @@ function rgbToHex([r, g, b]: [number, number, number]): string {
 }
 
 function fogColorForTime(hour: number, weather: string): string {
-  const daySky: [number, number, number] = [194, 220, 239];
-  const nightSky: [number, number, number] = [22, 28, 48];
-  const sunset: [number, number, number]  = [232, 150, 110];
+  const daySky: [number, number, number] = [176, 198, 232];
+  const nightSky: [number, number, number] = [13, 11, 28];
+  const sunset: [number, number, number]  = [222, 128, 152];
   // sunrise/sunset window
   let baseDay = hour >= 7 && hour <= 19 ? 1 :
     hour > 19 && hour < 21 ? 1 - (hour - 19) / 2 :
@@ -113,10 +113,10 @@ function fogColorForTime(hour: number, weather: string): string {
     col = lerpRgb(col, sunset, Math.max(0, Math.min(1, k)) * 0.8);
   }
   if (weather === "rain" || weather === "overcast") {
-    col = lerpRgb(col, [110, 118, 128], 0.5);
+    col = lerpRgb(col, [92, 98, 116], 0.5);
   }
   if (weather === "fog") {
-    col = lerpRgb(col, [180, 188, 200], 0.5);
+    col = lerpRgb(col, [150, 152, 178], 0.5);
   }
   return rgbToHex(col);
 }
@@ -140,11 +140,11 @@ export function Scene() {
   const sunPos = sunPosition(hour);
   const day = dayMix(hour, weather);
   const fogCol = fogColorForTime(hour, weather);
-  const dirIntensity = lerp(0.05, 1.3, day);
-  const ambientIntensity = lerp(0.06, 0.32, day);
-  const hemiIntensity = lerp(0.15, 0.55, day);
-  const skyColor = day > 0.7 ? "#cfe4ff" : day > 0.2 ? "#fbd6b1" : "#2a3050";
-  const groundHemi = day > 0.5 ? "#3a5a2c" : "#1a2218";
+  const dirIntensity = lerp(0.06, 1.25, day);
+  const ambientIntensity = lerp(0.1, 0.3, day);
+  const hemiIntensity = lerp(0.22, 0.5, day);
+  const skyColor = day > 0.7 ? "#cfe0ff" : day > 0.2 ? "#f3c8c0" : "#3a3460";
+  const groundHemi = day > 0.5 ? "#2a2d36" : "#14121f";
 
   return (
     <Canvas
@@ -166,7 +166,7 @@ export function Scene() {
       <directionalLight
         position={sunPos}
         intensity={dirIntensity}
-        color={day > 0.5 ? "#fff2d6" : "#9bb6e4"}
+        color={day > 0.5 ? "#fff0d8" : "#9a96e8"}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-camera-left={-size / 2}
@@ -187,7 +187,7 @@ export function Scene() {
           rayleigh={1.5}
         />
       )}
-      <Stars radius={400} depth={60} count={day > 0.6 ? 0 : 1800} factor={4} fade speed={0.5} />
+      <Stars radius={400} depth={60} count={day > 0.6 ? 0 : 3200} factor={4} fade speed={0.6} />
 
       <Ground size={size} plots={plotList} seed={seed} />
       <Roads size={size} plots={plotList} />

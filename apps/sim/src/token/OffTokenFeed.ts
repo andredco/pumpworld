@@ -11,7 +11,7 @@ export class OffTokenFeed implements TokenFeed {
 
   current(): TokenStats {
     return {
-      symbol: "$PILLS",
+      symbol: "$SOULS",
       mintAddress: null,
       source: "off",
       priceUsd: 0,

@@ -1,7 +1,7 @@
 /**
- * The Spring. The sacred fountain at the centre of The Pill Experiment drips $PILLS
+ * The Spring. The sacred fountain at the centre of Six Souls drips $SOULS
  * shards once per in-world hour, plus a larger "tide" at noon. Pills compete
- * to collect them; in-world currency is literally $PILLS.
+ * to collect them; in-world currency is literally $SOULS.
  *
  * Drip/tide cadence is stored on WorldMeta (pumpLastClockSlot / pumpLastTideDay)
  * so server restarts resume correctly instead of repeating or skipping ticks.
@@ -45,7 +45,7 @@ interface ShardItem extends Item {
 function spawnShard(world: World, x: number, z: number, amount: number): string {
   const id = nanoid(8);
   const item: ShardItem = {
-    id, kind: "currency", name: "$pills shard",
+    id, kind: "currency", name: "$souls shard",
     position: { x, y: 0, z },
     ownerPillId: null,
     potency: amount,

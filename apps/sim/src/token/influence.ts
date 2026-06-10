@@ -1,8 +1,8 @@
 /**
- * Derives the per-tick "vibe" the market is imposing on The Pill Experiment and
+ * Derives the per-tick "vibe" the market is imposing on Six Souls and
  * fires market_event broadcasts on threshold crossings.
  *
- * The whole point of this module: real-world $PILLS buyers literally make
+ * The whole point of this module: real-world $SOULS buyers literally make
  * the town richer and happier; sellers make it darker and hungrier. Pills
  * cannot see the market — they only feel its weather.
  */
@@ -108,7 +108,7 @@ export function tickMarket(world: World, feed: TokenFeed, state: MarketState): v
         magnitude: stats.priceUsd - prev,
         priceUsd: stats.priceUsd,
         marketCapUsd: stats.marketCapUsd,
-        message: `NEW ALL-TIME HIGH — $PILLS at $${stats.priceUsd.toExponential(2)} (mcap ${fmtUsd(stats.marketCapUsd)})`,
+        message: `NEW ALL-TIME HIGH — $SOULS at $${stats.priceUsd.toExponential(2)} (mcap ${fmtUsd(stats.marketCapUsd)})`,
       });
     }
   }
@@ -131,7 +131,7 @@ export function tickMarket(world: World, feed: TokenFeed, state: MarketState): v
       magnitude: stats.priceChange24hPct,
       priceUsd: stats.priceUsd,
       marketCapUsd: stats.marketCapUsd,
-      message: `THE SPRING GUSHES — $PILLS +${stats.priceChange24hPct.toFixed(1)}% (24h)`,
+      message: `THE SPRING GUSHES — $SOULS +${stats.priceChange24hPct.toFixed(1)}% (24h)`,
     });
   }
   // DUMP — sustained 24h change ≤ -25%
@@ -143,7 +143,7 @@ export function tickMarket(world: World, feed: TokenFeed, state: MarketState): v
       magnitude: stats.priceChange24hPct,
       priceUsd: stats.priceUsd,
       marketCapUsd: stats.marketCapUsd,
-      message: `THE SPRING RUNS LOW — $PILLS ${stats.priceChange24hPct.toFixed(1)}% (24h)`,
+      message: `THE SPRING RUNS LOW — $SOULS ${stats.priceChange24hPct.toFixed(1)}% (24h)`,
     });
   }
   // WHALE — 1h change crosses ±20% (positive = whale buy, negative = whale sell), cooldown 2 minutes
@@ -157,8 +157,8 @@ export function tickMarket(world: World, feed: TokenFeed, state: MarketState): v
       priceUsd: stats.priceUsd,
       marketCapUsd: stats.marketCapUsd,
       message: buy
-        ? `A WHALE HAS SURFACED — $PILLS +${stats.priceChange1hPct.toFixed(1)}% in the last hour`
-        : `THE WHALE HAS SOLD — $PILLS ${stats.priceChange1hPct.toFixed(1)}% in the last hour`,
+        ? `A WHALE HAS SURFACED — $SOULS +${stats.priceChange1hPct.toFixed(1)}% in the last hour`
+        : `THE WHALE HAS SOLD — $SOULS ${stats.priceChange1hPct.toFixed(1)}% in the last hour`,
     });
   }
 }

@@ -1,15 +1,16 @@
 import { EventTicker } from "./EventTicker.js";
 
 /**
- * Right-side event ticker. Was previously a tabbed panel with Events + Pills;
- * since the navbar has dedicated overlays for Pills (Characters) and Blogs,
- * this sidebar is now just the live event stream.
+ * Left-side event ticker, below the full-width top bar. Was previously a
+ * tabbed panel on the right; since the navbar has dedicated overlays for
+ * Pills (Characters) and Blogs, this sidebar is now just the live event
+ * stream and lives on the left so the market panel owns the right edge.
  */
 export function Sidebar() {
   return (
     <div style={{
       position: "absolute",
-      top: 76, right: 16, bottom: 16,
+      top: 70, left: 16, bottom: 16,
       width: 280,
       background: "var(--pw-card)",
       border: "1px solid var(--pw-border)",

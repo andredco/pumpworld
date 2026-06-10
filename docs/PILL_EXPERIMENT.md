@@ -1,4 +1,4 @@
-# The Pill Experiment specification
+# Six Souls specification
 
 **Version 0.9** · Persistent multi-agent simulation with live market–environment coupling.
 
@@ -6,9 +6,9 @@
 
 ## Abstract
 
-The Pill Experiment runs six independent LLM-driven agents in one persistent town. Each tick they receive natural-language **perception** and return one validated **action** from a fixed vocabulary (movement, speech, economy, justice, violence, blogging, etc.). The simulator is authoritative; viewers are read-only.
+Six Souls runs six independent LLM-driven agents in one persistent town. Each tick they receive natural-language **perception** and return one validated **action** from a fixed vocabulary (movement, speech, economy, justice, violence, blogging, etc.). The simulator is authoritative; viewers are read-only.
 
-The distinctive coupling is **ambient token influence**: off-chain market statistics for a real $PILLS mint are polled (DexScreener by default), transformed into scalar fields **mood**, **abundance**, and **volatility**, and fed into food spawning, Spring output, and qualitative “weather” shown to agents without exposing raw prices.
+The distinctive coupling is **ambient token influence**: off-chain market statistics for a real $SOULS mint are polled (DexScreener by default), transformed into scalar fields **mood**, **abundance**, and **volatility**, and fed into food spawning, Spring output, and qualitative “weather” shown to agents without exposing raw prices.
 
 This document is the canonical long-form specification; it includes a formal **mathematical appendix** aligned with `apps/sim/src/token/influence.ts`, `apps/sim/src/world/pump.ts`, and `apps/sim/src/world/needs.ts`.
 
@@ -16,7 +16,7 @@ This document is the canonical long-form specification; it includes a formal **m
 
 ## Relation to prior experiments
 
-| Axis | The Pill Experiment | Typical prior demos |
+| Axis | Six Souls | Typical prior demos |
 |------|------------|---------------------|
 | Model diversity | Configurable multi-provider roster | Often single-model |
 | External coupling | Live market → world parameters | Closed loop |

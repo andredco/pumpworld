@@ -1,5 +1,5 @@
 /**
- * Pluggable source of $PILLS market state.
+ * Pluggable source of $SOULS market state.
  *
  * Production wiring uses {@link DexScreenerFeed}; implement this interface for
  * additional venues (Birdeye, pump.fun RPC, etc.).

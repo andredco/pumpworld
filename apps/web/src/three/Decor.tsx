@@ -11,25 +11,35 @@ interface Props {
 }
 
 interface TreeT { x: number; z: number; s: number; tint: number }
-interface FlowerT { x: number; z: number; c: string }
+interface SporeT { x: number; z: number; c: string }
 interface RockT { x: number; z: number; s: number }
 
-const FLOWER_COLOURS = [
-  "#ff5577", "#ffd23f", "#b07cff", "#ff9a76", "#ffffff", "#ff8fb1",
-  "#5ac8fa", "#ff4d6d", "#34e0a1", "#ffa500", "#e0b3ff",
-];
-const TREE_GREENS = [
-  "#3e7a32", "#4a8d3a", "#356a2c", "#5fa346", "#2f6128",
-  "#6dba4a", "#88c25a", "#ff8aa4", // last one = cherry blossom pink
-  "#e88a3a", // autumn
+/** Glowing micro-flora dotted across the dish. */
+const SPORE_COLOURS = [
+  "#a78bfa", "#38bdf8", "#f472b6", "#34d399", "#fbbf24", "#c4b5fd", "#7dd3fc",
 ];
 
 /**
- * Procedural trees / flowers / rocks. Avoids placing inside buildings or in
- * the central plaza. Everything is deterministic per (seed, world size).
+ * Tree tints — mostly deep teal conifers, with a few luminous "soul trees"
+ * (emissive foliage) scattered through the wild zones.
+ */
+const TREE_TINTS: { color: string; emissive: boolean }[] = [
+  { color: "#1f4d44", emissive: false },
+  { color: "#26594a", emissive: false },
+  { color: "#1a4036", emissive: false },
+  { color: "#2e6653", emissive: false },
+  { color: "#35735c", emissive: false },
+  { color: "#7c5fd1", emissive: true },  // violet soul tree
+  { color: "#3aa6b8", emissive: true },  // cyan soul tree
+  { color: "#c95f9b", emissive: true },  // pink soul tree
+];
+
+/**
+ * Procedural conifers / spores / crystal rocks. Avoids placing inside
+ * buildings or in the central plaza. Deterministic per (seed, world size).
  */
 export function Decor({ size, seed, plots, buildings }: Props) {
-  const { trees, flowers, rocks } = useMemo(() => {
+  const { trees, spores, rocks } = useMemo(() => {
     const rnd = mulberry32(hashString(seed + ":decor"));
     const half = size / 2 - 4;
     const PLAZA_R2 = 18 * 18;
@@ -48,8 +58,15 @@ export function Decor({ size, seed, plots, buildings }: Props) {
     };
 
     const trees: TreeT[] = [];
-    const flowers: FlowerT[] = [];
+    const spores: SporeT[] = [];
     const rocks: RockT[] = [];
+
+    /** Soul trees are rare — bias tint selection toward the naturals. */
+    const pickTint = () => {
+      const roll = rnd();
+      if (roll < 0.85) return Math.floor(rnd() * 5);        // naturals 0–4
+      return 5 + Math.floor(rnd() * 3);                     // soul trees 5–7
+    };
 
     // bias tree density by zoning — wild & agricultural get the most
     const zonePoints = plots.flatMap(p => {
@@ -59,12 +76,11 @@ export function Decor({ size, seed, plots, buildings }: Props) {
         p.zoning === "residential" ? 3 :
         p.zoning === "commercial" ? 1 :
         p.zoning === "civic" ? 1 : 2;
-      const out: { x: number; z: number; weight: number }[] = [];
+      const out: { x: number; z: number }[] = [];
       for (let i = 0; i < density; i++) {
         out.push({
           x: p.position.x + (rnd() - 0.5) * p.size.x * 0.9,
           z: p.position.z + (rnd() - 0.5) * p.size.z * 0.9,
-          weight: 1,
         });
       }
       return out;
@@ -73,13 +89,9 @@ export function Decor({ size, seed, plots, buildings }: Props) {
     for (const pt of zonePoints) {
       if (insideBlocker(pt.x, pt.z, 1.5)) continue;
       if (Math.abs(pt.x) > half || Math.abs(pt.z) > half) continue;
-      trees.push({
-        x: pt.x, z: pt.z,
-        s: 1.1 + rnd() * 1.2, // bigger
-        tint: Math.floor(rnd() * TREE_GREENS.length),
-      });
+      trees.push({ x: pt.x, z: pt.z, s: 1.0 + rnd() * 1.2, tint: pickTint() });
     }
-    // sprinkle border trees so the perimeter feels forested
+    // border forest so the dish edge feels alive
     for (let i = 0; i < 110; i++) {
       const edge = rnd();
       const along = (rnd() * 2 - 1) * half;
@@ -88,29 +100,29 @@ export function Decor({ size, seed, plots, buildings }: Props) {
       const jx = x + (rnd() - 0.5) * 10;
       const jz = z + (rnd() - 0.5) * 10;
       if (insideBlocker(jx, jz, 2)) continue;
-      trees.push({ x: jx, z: jz, s: 1.4 + rnd() * 1.6, tint: Math.floor(rnd() * TREE_GREENS.length) });
+      trees.push({ x: jx, z: jz, s: 1.3 + rnd() * 1.6, tint: pickTint() });
     }
 
-    // flower density up
+    // glowing spores
     for (let i = 0; i < 420; i++) {
       const x = (rnd() * 2 - 1) * half;
       const z = (rnd() * 2 - 1) * half;
       if (insideBlocker(x, z, 1)) continue;
-      flowers.push({ x, z, c: FLOWER_COLOURS[Math.floor(rnd() * FLOWER_COLOURS.length)]! });
+      spores.push({ x, z, c: SPORE_COLOURS[Math.floor(rnd() * SPORE_COLOURS.length)]! });
     }
-    // explicit flower beds ringing every house — gives a "cared-for" look
+    // spore rings around every house — a "tended garden" of light
     for (const b of buildings) {
       if (b.kind !== "house") continue;
-      const beds = 28;
+      const beds = 24;
       const bx = b.position.x, bz = b.position.z;
       const radius = Math.max(b.size.x, b.size.z) * 0.62;
       for (let i = 0; i < beds; i++) {
         const a = (i / beds) * Math.PI * 2 + rnd() * 0.1;
         const r = radius + rnd() * 0.4;
-        flowers.push({
+        spores.push({
           x: bx + Math.cos(a) * r,
           z: bz + Math.sin(a) * r,
-          c: FLOWER_COLOURS[Math.floor(rnd() * FLOWER_COLOURS.length)]!,
+          c: SPORE_COLOURS[Math.floor(rnd() * SPORE_COLOURS.length)]!,
         });
       }
     }
@@ -122,51 +134,56 @@ export function Decor({ size, seed, plots, buildings }: Props) {
       rocks.push({ x, z, s: 0.4 + rnd() * 0.8 });
     }
 
-    return { trees, flowers, rocks };
+    return { trees, spores, rocks };
   }, [size, seed, plots, buildings]);
 
   return (
     <group>
-      {/* trees — trunks (taller) */}
+      {/* tree trunks */}
       <Instances limit={trees.length + 1} castShadow receiveShadow>
-        <cylinderGeometry args={[0.2, 0.28, 1.8, 6]} />
-        <meshStandardMaterial color="#5a3a22" roughness={1} />
+        <cylinderGeometry args={[0.16, 0.24, 1.6, 6]} />
+        <meshStandardMaterial color="#241f2b" roughness={1} />
         {trees.map((t, i) => (
-          <Instance key={`tt${i}`} position={[t.x, 0.9 * t.s, t.z]} scale={[t.s, t.s, t.s]} />
+          <Instance key={`tt${i}`} position={[t.x, 0.8 * t.s, t.z]} scale={[t.s, t.s, t.s]} />
         ))}
       </Instances>
-      {/* trees — foliage spheres, one Instances group per tint for cheap colour variety */}
-      {TREE_GREENS.map((green, gi) => (
+      {/* conifer foliage — one Instances group per tint */}
+      {TREE_TINTS.map((tint, gi) => (
         <Instances key={gi} limit={trees.length + 1} castShadow>
-          <sphereGeometry args={[1.4, 12, 10]} />
-          <meshStandardMaterial color={green} roughness={1} />
+          <coneGeometry args={[1.2, 3.0, 7]} />
+          <meshStandardMaterial
+            color={tint.color}
+            emissive={tint.emissive ? tint.color : "#000000"}
+            emissiveIntensity={tint.emissive ? 0.55 : 0}
+            roughness={0.9}
+          />
           {trees.filter(t => t.tint === gi).map((t, i) => (
             <Instance
               key={`tf${gi}-${i}`}
-              position={[t.x, 2.2 * t.s, t.z]}
-              scale={[t.s * 1.5, t.s * 1.5, t.s * 1.5]}
+              position={[t.x, 2.4 * t.s, t.z]}
+              scale={[t.s * 1.15, t.s * 1.15, t.s * 1.15]}
             />
           ))}
         </Instances>
       ))}
 
-      {/* flowers — group by colour so we keep instancing benefits */}
-      {FLOWER_COLOURS.map((c, ci) => (
-        <Instances key={c} limit={flowers.length + 1}>
-          <sphereGeometry args={[0.13, 6, 4]} />
-          <meshStandardMaterial color={c} emissive={c} emissiveIntensity={0.35} roughness={0.6} />
-          {flowers.filter(f => f.c === c).map((f, i) => (
-            <Instance key={`fl${ci}-${i}`} position={[f.x, 0.13, f.z]} />
+      {/* spores — grouped by colour to keep instancing benefits */}
+      {SPORE_COLOURS.map((c, ci) => (
+        <Instances key={c} limit={spores.length + 1}>
+          <sphereGeometry args={[0.1, 6, 4]} />
+          <meshStandardMaterial color={c} emissive={c} emissiveIntensity={1.3} roughness={0.4} />
+          {spores.filter(f => f.c === c).map((f, i) => (
+            <Instance key={`sp${ci}-${i}`} position={[f.x, 0.1, f.z]} />
           ))}
         </Instances>
       ))}
 
-      {/* rocks */}
+      {/* dark crystal rocks */}
       <Instances limit={rocks.length + 1} castShadow receiveShadow>
-        <dodecahedronGeometry args={[0.5, 0]} />
-        <meshStandardMaterial color="#7a7568" roughness={1} />
+        <octahedronGeometry args={[0.5, 0]} />
+        <meshStandardMaterial color="#3a3d46" roughness={0.5} metalness={0.3} />
         {rocks.map((r, i) => (
-          <Instance key={`rk${i}`} position={[r.x, 0.25 * r.s, r.z]} scale={[r.s, r.s * 0.7, r.s]} />
+          <Instance key={`rk${i}`} position={[r.x, 0.28 * r.s, r.z]} scale={[r.s, r.s * 0.8, r.s]} />
         ))}
       </Instances>
     </group>
